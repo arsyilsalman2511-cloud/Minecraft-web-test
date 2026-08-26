@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minecraft Mobile PE & Education Edition - Ultimate</title>
+    <!-- Three.js (Grafis 3D) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Firebase Legacy SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0c0f12;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Lobi Utama */
+        #lobby-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #16222f 0%, #0c1015 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            color: white;
+            text-shadow: 2px 2px 0px #000;
+        }
+        .lobby-card {
+            background: rgba(20, 26, 35, 0.95);
+            padding: 25px;
+            border-radius: 12px;
+            border: 4px solid #34495e;
+            width: 360px;
+            max-width: 85%;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        }
+        .lobby-card h1 {
+            font-size: 22px;
+            margin: 0 0 5px 0;
+            color: #2ecc71;
+            letter-spacing: 2px;
+        }
+        .lobby-card p {
+            font-size: 10px;
+            color: #95a5a6;
+            margin: 0 0 20px 0;
+        }
+        .lobby-input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            background: #0d1117;
+            border: 2px solid #4f5d73;
+            color: white;
+            font-family: monospace;
+            font-size: 13px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .lobby-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 15px;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 0 #000;
+        }
+        .lobby-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        /* Bidikan */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 18px;
+            height: 18px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+        }
+        #crosshair::before { top: 8px; left: 0; width: 18px; height: 2px; }
+        #crosshair::after { top: 0; left: 8px; width: 2px; height: 18px; }
+
+        /* HUD & Pengaturan Atas */
+        #hud-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid #444;
+        }
+        #hud-controls {
+            position: absolute;
+            top: 10px;
+            left: 200px;
+            z-index: 20;
+            display: flex;
+            gap: 8px;
+        }
+        .hud-btn {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #666;
+            color: white;
+            padding: 6px 12px;
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .hud-btn:active {
+            background: #27ae60;
+        }
+
+        /* Sistem Health Bar (Survival) */
+        #health-container {
+            position: absolute;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+            z-index: 20;
+        }
+        .heart {
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            clip-path: polygon(50% 15%, 80% 0%, 100% 30%, 50% 100%, 0% 30%, 20% 0%);
+        }
+
+        /* Overlay Tidur / Transisi */
+        #sleep-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            opacity: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            z-index: 400;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+        }
+
+        /* Chatbox */
+        #chat-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+            max-width: 45vw;
+            height: 140px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 2px solid #555;
+            border-radius: 4px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-size: 10px;
+        }
+        #chat-messages {
+            flex-grow: 1;
+            padding: 5px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .chat-msg { word-wrap: break-word; text-shadow: 1px 1px 0 #000; }
+        .chat-system { color: #f1c40f; }
+        .chat-user { color: #3498db; font-weight: bold; }
+        #chat-input-row { display: flex; border-top: 1px solid #555; }
+        #chat-input {
+            flex-grow: 1;
+            background: #111;
+            border: none;
+            color: white;
+            padding: 6px;
+            font-size: 10px;
+            font-family: monospace;
+            outline: none;
+        }
+        #chat-send {
+            background: #2ecc71;
+            border: none;
+            color: white;
+            padding: 0 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Virtual Joystick */
+        #joystick-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 110px;
+            height: 110px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            border: 2px solid #777;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            z-index: 20;
+        }
+        #joystick-knob {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            border: 2px solid #fff;
+            touch-action: none;
+        }
+
+        /* Tombol Aksi */
+        .btn-action {
+            position: absolute;
+            width: 58px;
+            height: 58px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid #888;
+            border-radius: 6px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 0px #000;
+            box-shadow: inset -3px -3px 0px #222, inset 3px 3px 0px #aaa;
+            touch-action: none;
+            z-index: 20;
+        }
+        .btn-action:active {
+            box-shadow: inset 3px 3px 0px #222, inset -3px -3px 0px #555;
+            background: rgba(0, 0, 0, 0.7);
+        }
+        #btn-jump { bottom: 105px; right: 30px; }
+        #btn-edu { bottom: 30px; right: 30px; background: rgba(52, 152, 219, 0.6); border-color: #2980b9; }
+        #btn-unseat { 
+            display: none; 
+            bottom: 180px; 
+            right: 30px; 
+            background: #e74c3c; 
+            border-color: #c0392b; 
+        }
+
+        /* Hotbar */
+        #hotbar-container {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background: rgba(80, 80, 80, 0.85);
+            border: 3px solid #2c3e50;
+            border-radius: 4px;
+            padding: 2px;
+            z-index: 20;
+            max-width: 85vw;
+            overflow-x: auto;
+        }
+        .hotbar-slot {
+            width: 44px;
+            height: 44px;
+            background: rgba(110, 110, 110, 0.95);
+            border: 2px solid #7f8c8d;
+            box-shadow: inset -2px -2px 0px #3c3c3c, inset 2px 2px 0px #fff;
+            margin: 0 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .hotbar-slot.active {
+            border: 2px solid #f1c40f;
+            box-shadow: inset -2px -2px 0px #b7950b, inset 2px 2px 0px #fffde7;
+            background: rgba(150, 150, 150, 1);
+        }
+        .slot-color-box {
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.4);
+        }
+        .slot-symbol {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111;
+        }
+        .slot-name {
+            font-size: 6px;
+            color: #000;
+            text-align: center;
+            margin-top: 1px;
+            font-weight: bold;
+        }
+
+        /* Lab Edu */
+        #edu-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: #2c3e50;
+            border: 4px solid #34495e;
+            border-radius: 8px;
+            z-index: 150;
+            color: white;
+            padding: 12px;
+        }
+        #edu-panel h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #3498db;
+            font-size: 14px;
+            border-bottom: 2px dashed #34495e;
+            padding-bottom: 8px;
+        }
+        .edu-section {
+            background: #1a252f;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #34495e;
+        }
+        .edu-title {
+            font-weight: bold;
+            color: #2ecc71;
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+        .constructor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .constructor-label { font-size: 10px; color: #bdc3c7; }
+        .constructor-controls { display: flex; align-items: center; }
+        .constructor-btn {
+            background: #34495e;
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .constructor-value { width: 25px; text-align: center; font-weight: bold; font-size: 11px; }
+        #element-preview-box {
+            text-align: center;
+            padding: 10px;
+            background: #111;
+            border: 2px solid #555;
+            border-radius: 4px;
+        }
+        #element-big-symbol { font-size: 40px; font-weight: bold; line-height: 1em; }
+        #element-big-name { font-size: 12px; color: #f1c40f; margin-top: 3px; }
+        .close-edu-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 8px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #toast-notification {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #2ecc71;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lobi Pendaftaran -->
+    <div id="lobby-container">
+        <div class="lobby-card">
+            <h1>MINECRAFT PE v26.1</h1>
+            <p>KONTROL TAP & HOLD - FIXED OFFLINE & ONLINE</p>
+            
+            <label style="font-size: 10px; display: block; text-align: left;">NAMA KARAKTER:</label>
+            <input type="text" id="username-input" class="lobby-input" value="SainsSteve" maxlength="12">
+
+            <label style="font-size: 10px; display: block; text-align: left; margin-top: 8px;">SEED DUNIA:</label>
+            <input type="text" id="seed-input" class="lobby-input" value="999" placeholder="Seed Angka">
+
+            <button id="btn-enter-game" class="lobby-btn">MULAI DUNIA KREATIF</button>
+        </div>
+    </div>
+
+    <!-- Antarmuka Gameplay -->
+    <div id="game-container">
+        <div id="crosshair"></div>
+
+        <!-- HUD Atas -->
+        <div id="hud-info">
+            <div><strong>MINECRAFT EDU PE</strong></div>
+            <div id="seed-display">Seed: 999</div>
+            <div id="mode-display">Mode: Kreatif</div>
+            <div id="coords-display">Posisi: X:0 Y:0 Z:0</div>
+            <div id="block-focused">Membidik: -</div>
+        </div>
+
+        <!-- Panel Tombol Pengaturan Lanjutan -->
+        <div id="hud-controls">
+            <button class="hud-btn" id="btn-mode-toggle">MODE: KREATIF</button>
+            <button class="hud-btn" id="btn-chat-toggle">CHAT: TAMPIL</button>
+            <button class="hud-btn" id="btn-save-world">SIMPAN</button>
+            <button class="hud-btn" id="btn-load-world">MUAT</button>
+        </div>
+
+        <div id="toast-notification"></div>
+
+        <!-- Sesi Tidur & Transisi -->
+        <div id="sleep-overlay">Tidur Nyenyak... Maju ke Pagi Hari</div>
+
+        <!-- Indikator Nyawa Survival -->
+        <div id="health-container" style="display: none;">
+            <div class="heart"></div><div class="heart"></div><div class="heart"></div><div class="heart"></div><div class="heart"></div>
+        </div>
+
+        <!-- Obrolan Real-time -->
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Kirim obrolan..." maxlength="50">
+                <button id="chat-send">KIRIM</button>
+            </div>
+        </div>
+
+        <!-- Joystick -->
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+
+        <!-- Tombol Aksi Sentuh -->
+        <div id="btn-jump" class="btn-action"><span>LOMPAT</span></div>
+        <div id="btn-edu" class="btn-action"><span>KIMIA</span></div>
+        <button id="btn-unseat" class="btn-action"><span>BERDIRI</span></button>
+
+        <!-- Hotbar Minecraft Campuran Blok Populer & Redstone Lanjutan -->
+        <div id="hotbar-container"></div>
+
+        <!-- Modul Lab Elemen Kimia -->
+        <div id="edu-panel">
+            <h2>Sintesis Atom Edu</h2>
+            <div class="edu-section">
+                <div class="edu-title">Partikel Inti</div>
+                <div class="constructor-row">
+                    <span class="constructor-label" style="color:#e74c3c;">Proton (+)</span>
+                    <div class="constructor-controls">
+                        <button class="constructor-btn" onclick="adjustParticle('p', -1)">-</button>
+                        <span id="proton-val" class="constructor-value">1</span>
+                        <button class="constructor-btn" onclick="adjustParticle('p', 1)">+</button>
+                    </div>
+                </div>
+                <div class="constructor-row">
+                    <span class="constructor-label" style="color:#3498db;">Elektron (-)</span>
+                    <div class="constructor-controls">
+                        <button class="constructor-btn" onclick="adjustParticle('e', -1)">-</button>
+                        <span id="electron-val" class="constructor-value">1</span>
+                        <button class="constructor-btn" onclick="adjustParticle('e', 1)">+</button>
+                    </div>
+                </div>
+                <div class="constructor-row">
+                    <span class="constructor-label" style="color:#95a5a6;">Neutron (o)</span>
+                    <div class="constructor-controls">
+                        <button class="constructor-btn" onclick="adjustParticle('n', -1)">-</button>
+                        <span id="neutron-val" class="constructor-value">0</span>
+                        <button class="constructor-btn" onclick="adjustParticle('n', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="edu-section" style="background: #111;">
+                <div class="edu-title" style="color: #f1c40f;">Unsur Unik</div>
+                <div id="element-preview-box">
+                    <div id="element-big-symbol" style="color: #2ecc71;">H</div>
+                    <div id="element-big-name">Hidrogen</div>
+                </div>
+            </div>
+            <button class="close-edu-btn" onclick="claimCreatedElement()">SINTESIS & AMBIL</button>
+            <button class="close-edu-btn" onclick="toggleEduPanel()" style="background:#7f8c8d; margin-top:6px;">BATAL</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DAFTAR DATABASE BLOK BERTEKSTUR DAN REKAYASA (Kreatif & Survival) ---
+        const minecraftBlocks = [
+            { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 }, // topgrass segar hijau
+            { id: 2, name: "Tanah", type: "dirt", color: 0x866043 },
+            { id: 3, name: "Batu", type: "stone", color: 0x737373 },
+            { id: 4, name: "Tempat Tidur", type: "bed", color: 0xe74c3c }, // Tidur klik (2x1x1)
+            { id: 5, name: "Kursi Kayu", type: "chair", color: 0xd35400 }, // Duduk klik (Realistic)
+            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65 }, // Mengalir
+            { id: 7, name: "Blok Redstone", type: "redstone_block", color: 0xc0392b }, // Sumber listrik konstan
+            { id: 8, name: "Bubuk Redstone", type: "redstone_dust", color: 0x7f0000 }, // Transmisi
+            { id: 9, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 }, // Menyala bila berlistrik
+            { id: 10, name: "Piston Hidrolik", type: "piston", color: 0x7f8c8d }, // Dorong voxel di depan
+            { id: 11, name: "TNT Dinamit", type: "tnt", color: 0xd35400 }, // Ledakan hancur
+            { id: 12, name: "Bijih Berlian", type: "diamond_ore", color: 0x7bc6cc }
+        ];
+
+        // Database Unsur Kimia (Edu Edition)
+        const elementDatabase = {
+            1: { symbol: "H", name: "Hidrogen", color: 0x3498db },
+            6: { symbol: "C", name: "Karbon", color: 0x2c3e50 },
+            8: { symbol: "O", name: "Oksigen", color: 0xffffff },
+            26: { symbol: "Fe", name: "Besi", color: 0x95a5a6 },
+            79: { symbol: "Au", name: "Emas", color: 0xf1c40f },
+            92: { symbol: "U", name: "Uranium", color: 0x2ecc71 },
+            118: { symbol: "Og", name: "Oganesson", color: 0x8e44ad }
+        };
+
+        // Sinkronisasi data dinamis sisa kimia
+        for (let i = 1; i <= 118; i++) {
+            if (!elementDatabase[i]) {
+                elementDatabase[i] = { symbol: `Un_${i}`, name: `Elemen ke-${i}`, color: 0x7f8c8d };
+            }
+        }
+
+        // --- SISTEM PENYIMPANAN WORLD SAVE/LOAD ---
+        let currentGamemode = "Creative"; 
+        let playerHealth = 100;
+        let isPlayerSleeping = false;
+        let isPlayerSitting = false;
+        let originalCameraY = 0;
+
+        // --- PREVENT CRASH ON COLD LAUNCH: SAFE FIREBASE DETECTION (RULE 1 & RULE 3) ---
+        let dbUser = null;
+        let myPlayerId = "offline_" + Math.floor(Math.random() * 1000);
+        let playersRef = null;
+        let blocksRef = null;
+        let chatsRef = null;
+        
+        let firebaseOnlineActive = false;
+        let appId = 'minecraft-edu-mega-26';
+
+        // Deteksi apakah konfigurasi Firebase valid
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try {
+                const configParsed = JSON.parse(__firebase_config);
+                firebase.initializeApp(configParsed);
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'minecraft-edu-mega-26';
+                playersRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('players');
+                blocksRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('blocks');
+                chatsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('chats');
+                
+                firebaseOnlineActive = true;
+            } catch(e) {
+                console.warn("Inisialisasi Firebase gagal, berjalan dalam mode offline:", e);
+            }
+        }
+
+        let myUsername = "Steve_PE";
+        let worldSeed = "999";
+        let numericSeed = 999;
+
+        // Prosedur Voxel Texture Prosedural Pixelated Mandiri (100% Bebas CORS!)
+        const textureCache = {};
+        function createPixelTexture(baseColor, topColor, isGrass = false) {
+            const cacheKey = `${baseColor}_${topColor}_${isGrass}`;
+            if (textureCache[cacheKey]) return textureCache[cacheKey];
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "#" + baseColor.toString(16).padStart(6, '0');
+            ctx.fillRect(0, 0, 16, 16);
+
+            for (let x = 0; x < 16; x += 2) {
+                for (let y = 0; y < 16; y += 2) {
+                    if (Math.random() > 0.6) {
+                        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+                        ctx.fillRect(x, y, 2, 2);
+                    }
+                }
+            }
+
+            if (isGrass && topColor) {
+                ctx.fillStyle = "#" + topColor.toString(16).padStart(6, '0');
+                ctx.fillRect(0, 0, 16, 5);
+                for (let i = 0; i < 16; i += 2) {
+                    if (Math.random() > 0.4) {
+                        ctx.fillRect(i, 5, 2, 2);
+                    }
+                }
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.NearestFilter;
+            textureCache[cacheKey] = tex;
+            return tex;
+        }
+
+        // --- SETUP SCENE RENDERING ENGINE ---
+        let scene, camera, renderer, clock;
+        let blocksGroup = [];
+        let voxelMap = {};
+        let activeHotbarIndex = 0;
+        let selectedItem = { type: 'block', id: 1 };
+
+        let player = {
+            position: new THREE.Vector3(0, 8, 0),
+            velocity: new THREE.Vector3(),
+            speed: 0.08,
+            onGround: false,
+            rotation: new THREE.Vector2(0, 0),
+            height: 1.6,
+            flyMode: false
+        };
+
+        // Inventaris Utama Hotbar
+        let hotbarSelection = [
+            { type: 'block', id: 1 },  // Rumput
+            { type: 'block', id: 4 },  // Kasur Tidur (2x1x1)
+            { type: 'block', id: 5 },  // Kursi Duduk (Realistic)
+            { type: 'block', id: 6 },  // Air Biru (Mengalir)
+            { type: 'block', id: 7 },  // Blok Redstone
+            { type: 'block', id: 9 },  // Lampu Redstone
+            { type: 'block', id: 10 }, // Piston
+            { type: 'block', id: 11 }, // TNT
+            { type: 'element', id: 92 } // Uranium
+        ];
+
+        // Kontrol Mobile PE
+        let isJoystickActive = false;
+        let joystickCenter = new THREE.Vector2();
+        let moveDirection = new THREE.Vector2();
+        let rightTouchId = null;
+        let lastRightTouchPos = new THREE.Vector2();
+
+        // Penanganan Tap & Hold
+        let mainTouchId = null;
+        let touchStartPoint = new THREE.Vector2();
+        let touchStartTime = 0;
+        let touchMoved = false;
+        let longPressTimer = null;
+        let hasExecutedHold = false;
+
+        const TAP_THRESHOLD_MS = 250;
+        const HOLD_THRESHOLD_MS = 1000;
+        const MOVE_THRESHOLD_PX = 15;
+
+        let raycaster = new THREE.Raycaster();
+        let currentFocusedBlock = null;
+        let highlightBox;
+
+        let otherPlayersMesh = {};
+        let currentP = 1, currentE = 1, currentN = 0;
+
+        function setSeedValue(seedStr) {
+            worldSeed = seedStr;
+            let val = 0;
+            for (let i = 0; i < seedStr.length; i++) {
+                val += seedStr.charCodeAt(i);
+            }
+            numericSeed = val;
+        }
+
+        function seededRandom(s) {
+            const x = Math.sin(s) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- MASUK KE DUNIA DAN DAFTARKAN AUTH ---
+        document.getElementById('btn-enter-game').addEventListener('click', async () => {
+            const userIn = document.getElementById('username-input').value.trim();
+            const seedIn = document.getElementById('seed-input').value.trim();
+
+            if (!userIn) {
+                alert("Harap masukkan Nama Karakter!");
+                return;
+            }
+
+            myUsername = userIn;
+            setSeedValue(seedIn || "999");
+
+            document.getElementById('lobby-container').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+
+            // Jika Firebase aktif, lakukan login secara asinkron
+            if (firebaseOnlineActive) {
+                try {
+                    const authInstance = firebase.auth();
+                    let cred;
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        cred = await authInstance.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        cred = await authInstance.signInAnonymously();
+                    }
+                    dbUser = cred.user;
+                    myPlayerId = dbUser.uid;
+                    showToast("Terhubung ke Server Edu-Awan!");
+                } catch (err) {
+                    console.error("Gagal masuk awan, beralih ke luring:", err);
+                    firebaseOnlineActive = false;
+                    showToast("Mode Offline (Lokal) Diaktifkan");
+                }
+            } else {
+                showToast("Mode Offline (Lokal) Diaktifkan");
+            }
+
+            document.getElementById('seed-display').innerText = `Seed: ${worldSeed}`;
+            initGameEngine();
+            startSyncingEngine();
+        });
+
+        // --- ARSITEKTUR ENGINE GRAFIS THREE.JS ---
+        function initGameEngine() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xb1e1ff);
+            scene.fog = new THREE.FogExp2(0xb1e1ff, 0.03);
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, player.height, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+            scene.add(ambient);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.55);
+            sun.position.set(15, 35, 15);
+            scene.add(sun);
+
+            const edgeGeom = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02, 1.02, 1.02));
+            const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+            highlightBox = new THREE.LineSegments(edgeGeom, edgeMat);
+            highlightBox.visible = false;
+            scene.add(highlightBox);
+
+            generateTerrain();
+            setupTouchControls();
+            setupHotbarUI();
+            setupChatEngine();
+            setupSurvivalControls();
+
+            // Jalankan sirkuit Redstone & Aliran Air secara berkala
+            setInterval(() => {
+                if (typeof scene !== 'undefined') {
+                    runWaterTick();
+                    runRedstoneTick();
+                }
+            }, 500);
+
+            window.addEventListener('resize', onWindowResize);
+            clock = new THREE.Clock();
+            animate();
+        }
+
+        // Terrain Prosedural
+        function generateTerrain() {
+            const size = 10;
+            const seedFactor = seededRandom(numericSeed);
+            const frequency = 0.15 + (seedFactor * 0.1);
+
+            for (let x = -size; x <= size; x++) {
+                for (let z = -size; z <= size; z++) {
+                    const hVal = Math.sin(x * frequency + numericSeed) * 1.5 + Math.cos(z * frequency - numericSeed) * 1.5;
+                    const height = Math.floor(hVal);
+
+                    createVoxel(x, height, z, 'block', 1); // Grass
+                    createVoxel(x, height - 1, z, 'block', 2); // Dirt
+                    createVoxel(x, height - 2, z, 'block', 3); // Stone
+                }
+            }
+            player.position.set(0, 5, 0);
+        }
+
+        // --- SISTEM RENDERING VOXEL ---
+        function createVoxel(x, y, z, type, id, state = {}) {
+            const key = `${x},${y},${z}`;
+            if (voxelMap[key]) return;
+
+            let mesh;
+
+            if (type === 'block') {
+                const config = minecraftBlocks.find(b => b.id === id);
+                if (!config) return;
+
+                if (config.id === 5) { // Kursi Kayu Realistis (Realistic Chair)
+                    const group = new THREE.Group();
+                    const chairMat = new THREE.MeshLambertMaterial({ color: config.color });
+                    
+                    // Alas Duduk (Seat)
+                    const seatGeom = new THREE.BoxGeometry(0.8, 0.08, 0.8);
+                    const seat = new THREE.Mesh(seatGeom, chairMat);
+                    seat.position.y = 0;
+                    group.add(seat);
+                    
+                    // Sandaran Punggung (Backrest)
+                    const backGeom = new THREE.BoxGeometry(0.8, 0.6, 0.08);
+                    const back = new THREE.Mesh(backGeom, chairMat);
+                    back.position.set(0, 0.3, -0.36);
+                    group.add(back);
+                    
+                    // Kaki Kursi Ramping (Legs)
+                    const legGeom = new THREE.BoxGeometry(0.08, 0.45, 0.08);
+                    const legOffsets = [
+                        [-0.35, -0.225, -0.35],
+                        [0.35, -0.225, -0.35],
+                        [-0.35, -0.225, 0.35],
+                        [0.35, -0.225, 0.35]
+                    ];
+                    legOffsets.forEach(offset => {
+                        const leg = new THREE.Mesh(legGeom, chairMat);
+                        leg.position.set(offset[0], offset[1], offset[2]);
+                        group.add(leg);
+                    });
+                    
+                    mesh = group;
+
+                    const yaw = Math.round(player.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+                    mesh.rotation.y = yaw;
+
+                } else if (config.id === 4) { // Tempat Tidur Realistis (Bed 2x1x1)
+                    const group = new THREE.Group();
+                    const redTex = createPixelTexture(0xe74c3c, null, false);
+                    const whiteTex = createPixelTexture(0xffffff, null, false);
+                    const woodTex = createPixelTexture(0x5c4033, null, false);
+                    
+                    const frameGeom = new THREE.BoxGeometry(1, 0.35, 2);
+                    const frame = new THREE.Mesh(frameGeom, new THREE.MeshLambertMaterial({ map: woodTex }));
+                    frame.position.y = -0.325;
+                    group.add(frame);
+                    
+                    const matGeom = new THREE.BoxGeometry(1, 0.5, 1.5);
+                    const mattress = new THREE.Mesh(matGeom, new THREE.MeshLambertMaterial({ map: redTex }));
+                    mattress.position.set(0, 0.05, 0.25);
+                    group.add(mattress);
+                    
+                    const pillowGeom = new THREE.BoxGeometry(0.8, 0.55, 0.5);
+                    const pillow = new THREE.Mesh(pillowGeom, new THREE.MeshLambertMaterial({ map: whiteTex }));
+                    pillow.position.set(0, 0.075, -0.75);
+                    group.add(pillow);
+                    
+                    mesh = group;
+
+                    const yaw = Math.round(player.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+                    mesh.rotation.y = yaw;
+
+                } else {
+                    const geometry = new THREE.BoxGeometry(1, 1, 1);
+                    let material;
+
+                    if (config.id === 1) { 
+                        const sideTex = createPixelTexture(config.sideColor, config.topColor, true);
+                        const topTex = createPixelTexture(config.topColor, null, false);
+                        const bottomTex = createPixelTexture(config.sideColor, null, false);
+
+                        material = [
+                            new THREE.MeshLambertMaterial({ map: sideTex }),
+                            new THREE.MeshLambertMaterial({ map: sideTex }),
+                            new THREE.MeshLambertMaterial({ map: topTex }),
+                            new THREE.MeshLambertMaterial({ map: bottomTex }),
+                            new THREE.MeshLambertMaterial({ map: sideTex }),
+                            new THREE.MeshLambertMaterial({ map: sideTex })
+                        ];
+                    } else if (config.id === 6) { 
+                        material = new THREE.MeshLambertMaterial({
+                            color: config.color,
+                            transparent: true,
+                            opacity: config.opacity
+                        });
+                    } else if (config.id === 9) { 
+                        const isLit = state.powered ? true : false;
+                        const lampColor = isLit ? 0xf39c12 : 0x3e2723;
+                        material = new THREE.MeshLambertMaterial({
+                            color: lampColor,
+                            emissive: lampColor,
+                            emissiveIntensity: isLit ? 0.7 : 0.0
+                        });
+                    } else if (config.id === 10) { 
+                        const pistonTex = createPixelTexture(0x7f8c8d, null, false);
+                        material = new THREE.MeshLambertMaterial({ map: pistonTex });
+                    } else {
+                        const tex = createPixelTexture(config.color, null, false);
+                        material = new THREE.MeshLambertMaterial({
+                            map: tex,
+                            transparent: config.transparent || false,
+                            opacity: config.opacity || 1.0
+                        });
+                    }
+                    mesh = new THREE.Mesh(geometry, material);
+                }
+            } else {
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const config = elementDatabase[id];
+                const material = new THREE.MeshLambertMaterial({
+                    color: config.color,
+                    transparent: true,
+                    opacity: 0.7,
+                    emissive: config.color,
+                    emissiveIntensity: 0.2
+                });
+                mesh = new THREE.Mesh(geometry, material);
+            }
+
+            mesh.position.set(x, y, z);
+            scene.add(mesh);
+
+            mesh.userData = { type: type, id: id, powered: state.powered || false };
+            voxelMap[key] = { 
+                mesh: mesh, 
+                type: type, 
+                id: id, 
+                powered: state.powered || false,
+                flowLevel: state.flowLevel !== undefined ? state.flowLevel : (id === 6 ? 4 : undefined)
+            };
+            blocksGroup.push(mesh);
+        }
+
+        function removeVoxel(x, y, z) {
+            const key = `${x},${y},${z}`;
+            if (!voxelMap[key]) return null;
+
+            const target = voxelMap[key];
+            scene.remove(target.mesh);
+            target.mesh.geometry.dispose();
+
+            if (Array.isArray(target.mesh.material)) {
+                target.mesh.material.forEach(m => m.dispose());
+            } else {
+                target.mesh.material.dispose();
+            }
+
+            blocksGroup = blocksGroup.filter(b => b !== target.mesh);
+            delete voxelMap[key];
+            return target;
+        }
+
+        // --- SISTEM PEMRORESAN LOGIKA REDSTONE, TNT & PISTON ---
+        function runRedstoneTick() {
+            const powerSources = [];
+            const lampBlocks = [];
+            const pistonBlocks = [];
+            const tntBlocks = [];
+
+            for (const key in voxelMap) {
+                const voxel = voxelMap[key];
+                const pos = voxel.mesh.position;
+
+                if (voxel.type === 'block' && voxel.id === 7) {
+                    powerSources.push(pos.clone());
+                } else if (voxel.type === 'block' && voxel.id === 9) {
+                    lampBlocks.push(voxel);
+                } else if (voxel.type === 'block' && voxel.id === 10) {
+                    pistonBlocks.push(voxel);
+                } else if (voxel.type === 'block' && voxel.id === 11) {
+                    tntBlocks.push(voxel);
+                }
+            }
+
+            lampBlocks.forEach(lamp => {
+                const pos = lamp.mesh.position;
+                let gotPower = false;
+                powerSources.forEach(src => {
+                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
+                });
+
+                if (gotPower !== lamp.powered) {
+                    const lPos = pos.clone();
+                    removeVoxel(lPos.x, lPos.y, lPos.z);
+                    createVoxel(lPos.x, lPos.y, lPos.z, 'block', 9, { powered: gotPower });
+                }
+            });
+
+            pistonBlocks.forEach(piston => {
+                const pos = piston.mesh.position;
+                let gotPower = false;
+                powerSources.forEach(src => {
+                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
+                });
+
+                if (gotPower && !piston.pushed) {
+                    piston.pushed = true;
+                    const pushY = pos.y + 1;
+                    const targetVoxel = voxelMap[`${pos.x},${pushY},${pos.z}`];
+                    if (targetVoxel && targetVoxel.id !== 10) {
+                        const targetPos = targetVoxel.mesh.position.clone();
+                        const removed = removeVoxel(targetPos.x, targetPos.y, targetPos.z);
+                        if (removed) {
+                            createVoxel(targetPos.x, targetPos.y + 1, targetPos.z, removed.type, removed.id);
+                            showToast("Piston mengaktifkan daya dorong!");
+                        }
+                    }
+                }
+            });
+
+            tntBlocks.forEach(tnt => {
+                const pos = tnt.mesh.position;
+                let gotPower = false;
+                powerSources.forEach(src => {
+                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
+                });
+
+                if (gotPower) {
+                    triggerTntExplosion(pos.x, pos.y, pos.z);
+                }
+            });
+        }
+
+        // --- SISTEM PEMRORESAN AKTIF ALIRAN AIR ---
+        function runWaterTick() {
+            const waterUpdates = [];
+            
+            for (const key in voxelMap) {
+                const voxel = voxelMap[key];
+                if (voxel.type === 'block' && voxel.id === 6) { 
+                    const pos = voxel.mesh.position;
+                    const x = Math.round(pos.x);
+                    const y = Math.round(pos.y);
+                    const z = Math.round(pos.z);
+                    const level = voxel.flowLevel !== undefined ? voxel.flowLevel : 4;
+
+                    const downKey = `${x},${y-1},${z}`;
+                    if (y - 1 > -15 && !voxelMap[downKey]) {
+                        waterUpdates.push({ x: x, y: y-1, z: z, level: 4 });
+                    } else if (level > 1) {
+                        const neighbors = [
+                            { x: x + 1, y: y, z: z },
+                            { x: x - 1, y: y, z: z },
+                            { x: x, y: y, z: z + 1 },
+                            { x: x, y: y, z: z - 1 }
+                        ];
+                        neighbors.forEach(n => {
+                            const nKey = `${n.x},${n.y},${n.z}`;
+                            if (!voxelMap[nKey]) {
+                                waterUpdates.push({ x: n.x, y: n.y, z: n.z, level: level - 1 });
+                            }
+                        });
+                    }
+                }
+            }
+
+            waterUpdates.forEach(u => {
+                createVoxel(u.x, u.y, u.z, 'block', 6, { flowLevel: u.level });
+            });
+        }
+
+        // Ledakan TNT Dinamit
+        function triggerTntExplosion(x, y, z) {
+            removeVoxel(x, y, z);
+            showToast("<span style='color:red;'>⚠️ TNT TERSEDIA! MELEDAK! ⚠️</span>");
+
+            const radius = 3;
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dz = -radius; dz <= radius; dz++) {
+                        if (Math.sqrt(dx*dx + dy*dy + dz*dz) <= radius) {
+                            const tx = x + dx;
+                            const ty = y + dy;
+                            const tz = z + dz;
+                            removeVoxel(tx, ty, tz);
+                        }
+                    }
+                }
+            }
+
+            const flashGeo = new THREE.SphereGeometry(2, 8, 8);
+            const flashMat = new THREE.MeshBasicMaterial({ color: 0xff4500, transparent: true, opacity: 0.8 });
+            const flash = new THREE.Mesh(flashGeo, flashMat);
+            flash.position.set(x, y, z);
+            scene.add(flash);
+            setTimeout(() => { scene.remove(flash); }, 600);
+        }
+
+        // --- MANAJEMEN MODE BERTAHAN HIDUP & KREATIF ---
+        function setupSurvivalControls() {
+            const toggleBtn = document.getElementById('btn-mode-toggle');
+            const chatToggleBtn = document.getElementById('btn-chat-toggle');
+            const healthUI = document.getElementById('health-container');
+
+            toggleBtn.addEventListener('click', () => {
+                if (currentGamemode === "Creative") {
+                    currentGamemode = "Survival";
+                    player.flyMode = false;
+                    playerHealth = 100;
+                    healthUI.style.display = "flex";
+                    toggleBtn.innerText = "MODE: SURVIVAL";
+                    document.getElementById('mode-display').innerText = "Mode: Survival";
+                    showToast("Mode Bertahan Hidup diaktifkan! Hati-hati terhadap jatuh.");
+                } else {
+                    currentGamemode = "Creative";
+                    healthUI.style.display = "none";
+                    toggleBtn.innerText = "MODE: KREATIF";
+                    document.getElementById('mode-display').innerText = "Mode: Kreatif";
+                    showToast("Mode Kreatif diaktifkan! Anda bebas terbang.");
+                }
+            });
+
+            chatToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer.style.display === "none") {
+                    chatContainer.style.display = "flex";
+                    chatToggleBtn.innerText = "CHAT: TAMPIL";
+                    showToast("Kotak obrolan ditampilkan");
+                } else {
+                    chatContainer.style.display = "none";
+                    chatToggleBtn.innerText = "CHAT: SEMBUNYI";
+                    showToast("Kotak obrolan disembunyikan");
+                }
+            });
+
+            document.getElementById('btn-save-world').addEventListener('click', () => {
+                saveWorldProgress();
+            });
+            document.getElementById('btn-load-world').addEventListener('click', () => {
+                loadWorldProgress();
+            });
+        }
+
+        // --- FITUR SAVE / LOAD WORLD ---
+        function saveWorldProgress() {
+            const saveName = `mc_save_${worldSeed}`;
+            const worldData = {
+                seed: worldSeed,
+                gamemode: currentGamemode,
+                playerPos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                blocks: []
+            };
+
+            for (const key in voxelMap) {
+                const v = voxelMap[key];
+                worldData.blocks.push({
+                    x: v.mesh.position.x,
+                    y: v.mesh.position.y,
+                    z: v.mesh.position.z,
+                    type: v.type,
+                    id: v.id
+                });
+            }
+
+            localStorage.setItem(saveName, JSON.stringify(worldData));
+            showToast("Progres Dunia Berhasil Disimpan Secara Lokal!");
+
+            if (firebaseOnlineActive && dbUser) {
+                db.collection('artifacts').doc(appId).collection('public').doc('data').collection('saved_worlds').doc(worldSeed).set({
+                    savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    blocksCount: worldData.blocks.length,
+                    author: myUsername
+                }).catch(e => console.log(e));
+            }
+        }
+
+        function loadWorldProgress() {
+            const saveName = `mc_save_${worldSeed}`;
+            const raw = localStorage.getItem(saveName);
+
+            if (!raw) {
+                showToast("<span style='color:red;'>Gagal memuat! Simpanan dunia ini tidak ditemukan.</span>");
+                return;
+            }
+
+            const data = JSON.parse(raw);
+            
+            const keys = Object.keys(voxelMap);
+            keys.forEach(k => {
+                const pos = voxelMap[k].mesh.position;
+                removeVoxel(pos.x, pos.y, pos.z);
+            });
+
+            data.blocks.forEach(b => {
+                createVoxel(b.x, b.y, b.z, b.type, b.id);
+            });
+
+            camera.position.set(data.playerPos.x, data.playerPos.y, data.playerPos.z);
+            showToast("Dunia Berhasil Dimuat dari Memori!");
+        }
+
+        // --- KONTROL SENTUH HP PE ---
+        function setupTouchControls() {
+            const container = document.getElementById('joystick-container');
+            const knob = document.getElementById('joystick-knob');
+
+            container.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                isJoystickActive = true;
+                const rect = container.getBoundingClientRect();
+                joystickCenter.set(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+                if (!isJoystickActive) return;
+                const touch = e.targetTouches[0];
+                let dx = touch.clientX - joystickCenter.x;
+                let dy = touch.clientY - joystickCenter.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                const maxDist = 35;
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+
+                knob.style.transform = `translate(${dx}px, ${dy}px)`;
+                moveDirection.set(dx / maxDist, -dy / maxDist);
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                e.stopPropagation();
+                isJoystickActive = false;
+                knob.style.transform = 'translate(0px, 0px)';
+                moveDirection.set(0, 0);
+            }, { passive: true });
+
+            window.addEventListener('touchstart', (e) => {
+                if (e.target.closest('#hotbar-container') || 
+                    e.target.closest('#lobby-container') || 
+                    e.target.closest('#edu-panel') || 
+                    e.target.closest('#chat-container') || 
+                    e.target.closest('.btn-action') || 
+                    e.target.closest('#hud-controls') || 
+                    e.target.closest('#joystick-container')) {
+                    return;
+                }
+
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    
+                    if (mainTouchId === null) {
+                        mainTouchId = t.identifier;
+                        touchStartPoint.set(t.clientX, t.clientY);
+                        touchStartTime = Date.now();
+                        touchMoved = false;
+                        hasExecutedHold = false;
+
+                        longPressTimer = setTimeout(() => {
+                            if (!touchMoved && mainTouchId !== null) {
+                                breakVoxelAction();
+                                hasExecutedHold = true;
+                            }
+                        }, HOLD_THRESHOLD_MS);
+                    }
+                    
+                    if (t.clientX > window.innerWidth / 2 && rightTouchId === null) {
+                        rightTouchId = t.identifier;
+                        lastRightTouchPos.set(t.clientX, t.clientY);
+                    }
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                for (let i = 0; i < e.touches.length; i++) {
+                    const t = e.touches[i];
+                    
+                    if (t.identifier === mainTouchId) {
+                        const dist = touchStartPoint.distanceTo(new THREE.Vector2(t.clientX, t.clientY));
+                        if (dist > MOVE_THRESHOLD_PX) {
+                            touchMoved = true;
+                            if (longPressTimer) {
+                                clearTimeout(longPressTimer);
+                                longPressTimer = null;
+                            }
+                        }
+                    }
+
+                    if (t.identifier === rightTouchId) {
+                        let dx = t.clientX - lastRightTouchPos.x;
+                        let dy = t.clientY - lastRightTouchPos.y;
+
+                        player.rotation.y -= dx * 0.005;
+                        player.rotation.x -= dy * 0.005;
+                        player.rotation.x = Math.max(-Math.PI/2.1, Math.min(Math.PI/2.1, player.rotation.x));
+
+                        lastRightTouchPos.set(t.clientX, t.clientY);
+                    }
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+
+                    if (t.identifier === mainTouchId) {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+
+                        const duration = Date.now() - touchStartTime;
+
+                        if (!touchMoved && !hasExecutedHold && duration < TAP_THRESHOLD_MS) {
+                            handleInteractionOrPlace();
+                        }
+
+                        mainTouchId = null;
+                    }
+
+                    if (t.identifier === rightTouchId) {
+                        rightTouchId = null;
+                    }
+                }
+            }, { passive: true });
+
+            document.getElementById('btn-jump').addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (currentGamemode === "Creative") {
+                    player.velocity.y = 0.12;
+                } else if (player.onGround) {
+                    player.velocity.y = 0.15;
+                    player.onGround = false;
+                }
+            });
+
+            document.getElementById('btn-unseat').addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                standUpFromChair();
+            });
+
+            document.getElementById('btn-edu').addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleEduPanel();
+            });
+        }
+
+        // --- PENANGANAN SELEKSI INTERAKSI DUNIA ---
+        function handleInteractionOrPlace() {
+            if (currentFocusedBlock) {
+                const info = currentFocusedBlock.userData;
+                const pos = currentFocusedBlock.position;
+
+                if (info.type === 'block' && info.id === 4) {
+                    triggerSleepTransition();
+                    return;
+                } else if (info.type === 'block' && info.id === 5) {
+                    triggerSitTransition(pos.clone());
+                    return;
+                } else if (info.type === 'block' && info.id === 11) {
+                    triggerTntExplosion(pos.x, pos.y, pos.z);
+                    return;
+                }
+            }
+            placeVoxelAction();
+        }
+
+        // Transisi Tidur
+        function triggerSleepTransition() {
+            if (isPlayerSleeping) return;
+            isPlayerSleeping = true;
+            
+            const overlay = document.getElementById('sleep-overlay');
+            overlay.style.display = "flex";
+            setTimeout(() => { overlay.style.opacity = 1; }, 50);
+
+            showToast("Anda tidur di kasur merah yang empuk...");
+
+            setTimeout(() => {
+                scene.background = new THREE.Color(0xb1e1ff);
+                scene.fog.color.setHex(0xb1e1ff);
+                showToast("Pagi tiba! Energi sains Anda pulih!");
+                playerHealth = 100;
+                
+                overlay.style.opacity = 0;
+                setTimeout(() => { 
+                    overlay.style.display = "none"; 
+                    isPlayerSleeping = false;
+                }, 1500);
+            }, 3000);
+        }
+
+        // Transisi Duduk
+        function triggerSitTransition(chairPos) {
+            if (isPlayerSitting) return;
+            isPlayerSitting = true;
+
+            originalCameraY = camera.position.y;
+            camera.position.set(chairPos.x, chairPos.y + 0.45, chairPos.z);
+            
+            moveDirection.set(0, 0);
+            document.getElementById('btn-unseat').style.display = "flex";
+            showToast("Duduk di kursi kayu.");
+        }
+
+        function standUpFromChair() {
+            if (!isPlayerSitting) return;
+            isPlayerSitting = false;
+            document.getElementById('btn-unseat').style.display = "none";
+            
+            camera.position.y = originalCameraY || 2.5;
+            showToast("Kembali berdiri.");
+        }
+
+        // Penempatan Blok
+        function placeVoxelAction() {
+            let bx, by, bz;
+            if (currentFocusedBlock) {
+                const intersect = raycaster.intersectObjects(blocksGroup)[0];
+                if (!intersect) return;
+                const normal = intersect.face.normal.clone().transformDirection(currentFocusedBlock.matrixWorld);
+                const pos = currentFocusedBlock.position;
+                bx = Math.round(pos.x + normal.x);
+                by = Math.round(pos.y + normal.y);
+                bz = Math.round(pos.z + normal.z);
+            } else {
+                const front = new THREE.Vector3(0, 0, -2.5).applyQuaternion(camera.quaternion).add(camera.position);
+                bx = Math.round(front.x);
+                by = Math.round(front.y);
+                bz = Math.round(front.z);
+            }
+
+            const pX = Math.round(camera.position.x);
+            const pZ = Math.round(camera.position.z);
+            const pY = Math.round(camera.position.y);
+            if (bx === pX && bz === pZ && (by === pY || by === pY - 1)) return;
+
+            createVoxel(bx, by, bz, selectedItem.type, selectedItem.id);
+            runRedstoneTick();
+            
+            if (firebaseOnlineActive && dbUser) {
+                blocksRef.doc(`${bx}_${by}_${bz}`).set({
+                    seed: worldSeed,
+                    type: selectedItem.type,
+                    elementId: selectedItem.id,
+                    by: myUsername
+                }).catch(e => console.log(e));
+            }
+        }
+
+        function breakVoxelAction() {
+            if (!currentFocusedBlock) return;
+            const pos = currentFocusedBlock.position;
+            const res = removeVoxel(pos.x, pos.y, pos.z);
+
+            if (res) {
+                showToast("Blok hancur!");
+                runRedstoneTick();
+                if (firebaseOnlineActive && dbUser) {
+                    blocksRef.doc(`${pos.x}_${pos.y}_${pos.z}`).delete().catch(e => console.log(e));
+                }
+            }
+        }
+
+        // --- SISTEM CHAT ---
+        function setupChatEngine() {
+            const chatInput = document.getElementById('chat-input');
+            const chatSend = document.getElementById('chat-send');
+
+            chatSend.addEventListener('click', async () => {
+                const msg = chatInput.value.trim();
+                if (!msg) return;
+
+                if (firebaseOnlineActive && dbUser) {
+                    await chatsRef.add({
+                        sender: myUsername,
+                        seed: worldSeed,
+                        message: msg,
+                        isSystem: false,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(e => console.log(e));
+                } else {
+                    // Chat local offline fallback
+                    appendLocalChatMessage(myUsername, msg);
+                }
+                chatInput.value = "";
+            });
+
+            if (firebaseOnlineActive) {
+                chatsRef.onSnapshot((snapshot) => {
+                    const box = document.getElementById('chat-messages');
+                    box.innerHTML = "";
+                    let msgs = [];
+                    snapshot.forEach((doc) => {
+                        const d = doc.data();
+                        if (d.seed === worldSeed) msgs.push(d);
+                    });
+
+                    msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                    msgs.slice(-15).forEach((m) => {
+                        appendLocalChatMessage(m.sender, m.message, m.isSystem);
+                    });
+                }, (err) => console.log(err));
+            } else {
+                appendLocalChatMessage("System", "Berjalan dalam Mode Offline (Lokal). Chat box hanya berfungsi luring.", true);
+            }
+        }
+
+        function appendLocalChatMessage(sender, message, isSystem = false) {
+            const box = document.getElementById('chat-messages');
+            const item = document.createElement('div');
+            item.className = 'chat-msg';
+            if (isSystem) {
+                item.innerHTML = `<span class="chat-system">[System] ${message}</span>`;
+            } else {
+                item.innerHTML = `<span class="chat-user">${sender}:</span> ${message}`;
+            }
+            box.appendChild(item);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendSystemChat(text) {
+            if (firebaseOnlineActive && dbUser) {
+                await chatsRef.add({
+                    sender: "System",
+                    seed: worldSeed,
+                    message: text,
+                    isSystem: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => console.log(e));
+            } else {
+                appendLocalChatMessage("System", text, true);
+            }
+        }
+
+        // --- HOTBAR INTERFACE ---
+        function setupHotbarUI() {
+            const container = document.getElementById('hotbar-container');
+            container.innerHTML = "";
+
+            hotbarSelection.forEach((item, index) => {
+                const slot = document.createElement('div');
+                slot.className = `hotbar-slot ${index === activeHotbarIndex ? 'active' : ''}`;
+                
+                if (item.type === 'block') {
+                    const b = minecraftBlocks.find(bl => bl.id === item.id);
+                    slot.innerHTML = `
+                        <div class="slot-color-box" style="background-color:#${b.color.toString(16).padStart(6,'0')};"></div>
+                        <span class="slot-name">${b.name}</span>
+                    `;
+                } else {
+                    const el = elementDatabase[item.id];
+                    slot.innerHTML = `
+                        <span class="slot-symbol" style="color:#${el.color.toString(16).padStart(6,'0')};">${el.symbol}</span>
+                        <span class="slot-name">${el.name}</span>
+                    `;
+                }
+
+                slot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    changeSelectedSlot(index);
+                });
+                container.appendChild(slot);
+            });
+            selectedItem = hotbarSelection[activeHotbarIndex];
+        }
+
+        function changeSelectedSlot(index) {
+            activeHotbarIndex = index;
+            setupHotbarUI();
+        }
+
+        // --- LAB KIMIA ---
+        function toggleEduPanel() {
+            const panel = document.getElementById('edu-panel');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+            if (panel.style.display === 'block') {
+                currentP = selectedItem.type === 'element' ? selectedItem.id : 1;
+                currentE = currentP;
+                currentN = Math.round(currentP * 1.25);
+                updateConstructorUI();
+            }
+        }
+
+        function adjustParticle(type, val) {
+            if (type === 'p') currentP = Math.max(1, Math.min(118, currentP + val));
+            if (type === 'e') currentE = Math.max(1, Math.min(118, currentE + val));
+            if (type === 'n') currentN = Math.max(0, Math.min(180, currentN + val));
+            updateConstructorUI();
+        }
+
+        function updateConstructorUI() {
+            document.getElementById('proton-val').innerText = currentP;
+            document.getElementById('electron-val').innerText = currentE;
+            document.getElementById('neutron-val').innerText = currentN;
+
+            const sym = document.getElementById('element-big-symbol');
+            const name = document.getElementById('element-big-name');
+
+            if (currentP === currentE) {
+                const el = elementDatabase[currentP];
+                sym.innerText = el.symbol;
+                sym.style.color = '#' + el.color.toString(16).padStart(6, '0');
+                name.innerText = el.name;
+            } else {
+                sym.innerText = "ION";
+                sym.style.color = "#e74c3c";
+                name.innerText = "Tidak Stabil!";
+            }
+        }
+
+        function claimCreatedElement() {
+            if (currentP !== currentE) {
+                showToast("<span style='color:red;'>Unsur harus netral (Proton = Elektron)!</span>");
+                return;
+            }
+            hotbarSelection[activeHotbarIndex] = { type: 'element', id: currentP };
+            setupHotbarUI();
+            toggleEduPanel();
+            showToast(`Unsur Berhasil Disintesis: <strong>${elementDatabase[currentP].name}</strong>!`);
+        }
+
+        // --- CLOUD SINKRONISASI ---
+        function startSyncingEngine() {
+            if (!firebaseOnlineActive) return;
+
+            setInterval(() => {
+                if (isPlayerSitting) return;
+                playersRef.doc(myPlayerId).set({
+                    username: myUsername,
+                    seed: worldSeed,
+                    x: camera.position.x,
+                    y: camera.position.y - player.height,
+                    z: camera.position.z,
+                    ry: player.rotation.y,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true }).catch(e => console.log(e));
+            }, 300);
+
+            playersRef.onSnapshot((snapshot) => {
+                let otherCount = 0;
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (doc.id === myPlayerId || data.seed !== worldSeed) return;
+                    otherCount++;
+                    updateOtherPlayerAvatar(doc.id, data);
+                });
+                document.getElementById('player-count').innerText = `Player Lain: ${otherCount}`;
+            }, (err) => console.log(err));
+
+            sendSystemChat(`${myUsername} bergabung dalam petualangan sains!`);
+        }
+
+        function updateOtherPlayerAvatar(pId, data) {
+            if (!otherPlayersMesh[pId]) {
+                const group = new THREE.Group();
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshLambertMaterial({ color: 0xdca26c }));
+                head.position.y = 0.5;
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.3), new THREE.MeshLambertMaterial({ color: 0x2ecc71 }));
+                body.position.y = -0.3;
+                group.add(head);
+                group.add(body);
+                scene.add(group);
+                otherPlayersMesh[pId] = group;
+            }
+            const avatar = otherPlayersMesh[pId];
+            avatar.position.set(data.x, data.y + player.height / 2, data.z);
+            avatar.rotation.y = data.ry;
+        }
+
+        // --- BIDIKAN / RAYCASTING ---
+        function updateRaycasting() {
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(blocksGroup, true);
+
+            if (intersects.length > 0 && intersects[0].distance < 6.0) {
+                const focused = intersects[0].object;
+                
+                let rootObj = focused;
+                while (rootObj.parent && rootObj.parent !== scene) {
+                    rootObj = rootObj.parent;
+                }
+
+                if (blocksGroup.includes(rootObj)) {
+                    if (currentFocusedBlock !== rootObj) {
+                        currentFocusedBlock = rootObj;
+                        highlightBox.position.copy(currentFocusedBlock.position);
+                        
+                        highlightBox.scale.set(1, 1, 1);
+                        highlightBox.rotation.set(0, 0, 0);
+
+                        const data = currentFocusedBlock.userData;
+                        if (data && data.type === 'block') {
+                            if (data.id === 4) { 
+                                highlightBox.scale.set(1, 1, 2);
+                                highlightBox.rotation.copy(currentFocusedBlock.rotation);
+                            } else if (data.id === 5) { 
+                                highlightBox.scale.set(1, 1.2, 1);
+                            }
+                        }
+                        
+                        highlightBox.visible = true;
+
+                        const hudText = document.getElementById('block-focused');
+                        if (data.type === 'block') {
+                            hudText.innerHTML = `Membidik: <strong>${minecraftBlocks.find(b => b.id === data.id).name}</strong>`;
+                        } else {
+                            hudText.innerHTML = `Membidik: <strong style="color:#e67e22;">Unsur ${elementDatabase[data.id].name}</strong>`;
+                        }
+                    }
+                }
+            } else {
+                currentFocusedBlock = null;
+                highlightBox.visible = false;
+                document.getElementById('block-focused').innerText = "Membidik: Udara";
+            }
+        }
+
+        // --- UTILITIES ---
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notification');
+            toast.innerHTML = msg;
+            toast.style.display = 'block';
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toast.style.display = 'none', 2500);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- GAME LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isPlayerSitting) {
+                camera.quaternion.setFromEuler(new THREE.Euler(player.rotation.x, player.rotation.y, 0, 'YXZ'));
+            }
+
+            // Pergerakan WASD / Joystick
+            if (!isPlayerSitting && isJoystickActive && (moveDirection.x !== 0 || moveDirection.y !== 0)) {
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                forward.y = 0; forward.normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                right.y = 0; right.normalize();
+
+                const moveVec = new THREE.Vector3();
+                moveVec.addScaledVector(forward, moveDirection.y * player.speed);
+                moveVec.addScaledVector(right, moveDirection.x * player.speed);
+                camera.position.add(moveVec);
+            }
+
+            // Deteksi Berenang di Air & Gravitasi
+            if (!isPlayerSitting) {
+                const px = Math.round(camera.position.x);
+                const py = Math.round(camera.position.y);
+                const pz = Math.round(camera.position.z);
+                const standingBlock = voxelMap[`${px},${Math.round(camera.position.y - player.height)},${pz}`];
+                
+                let isInWater = false;
+                if (standingBlock && standingBlock.id === 6) {
+                    isInWater = true;
+                }
+
+                camera.position.y += player.velocity.y;
+                let groundHeight = -10;
+
+                for (let y = 10; y > -10; y--) {
+                    if (voxelMap[`${px},${y},${pz}`] && voxelMap[`${px},${y},${pz}`].id !== 6) { 
+                        groundHeight = y + 0.5 + player.height;
+                        break;
+                    }
+                }
+
+                if (isInWater) {
+                    player.velocity.y = Math.max(-0.02, player.velocity.y - 0.002);
+                    player.onGround = true; 
+                    if (camera.position.y <= groundHeight) {
+                        camera.position.y = groundHeight;
+                        player.velocity.y = 0;
+                    }
+                } else if (camera.position.y <= groundHeight) {
+                    if (currentGamemode === "Survival" && player.velocity.y < -0.15) {
+                        const damage = Math.round(Math.abs(player.velocity.y) * 150);
+                        playerHealth = Math.max(0, playerHealth - damage);
+                        showToast(`<span style='color:red;'>Aduh! Terluka akibat jatuh (-${damage} HP)</span>`);
+                        
+                        const hearts = document.querySelectorAll('.heart');
+                        const activeHeartsCount = Math.ceil(playerHealth / 20);
+                        hearts.forEach((h, idx) => {
+                            h.style.display = idx < activeHeartsCount ? "block" : "none";
+                        });
+
+                        if (playerHealth <= 0) {
+                            showToast("<span style='color:red; font-weight:bold;'>Steve Gugur! Respawn...</span>");
+                            camera.position.set(0, 8, 0);
+                            playerHealth = 100;
+                            hearts.forEach(h => h.style.display = "block");
+                        }
+                    }
+
+                    camera.position.y = groundHeight;
+                    player.velocity.y = 0;
+                    player.onGround = true;
+                } else {
+                    player.velocity.y -= 0.007;
+                    player.onGround = false;
+                }
+            }
+
+            if (camera.position.y < -15) {
+                camera.position.set(0, 8, 0);
+                player.velocity.set(0, 0, 0);
+            }
+
+            document.getElementById('coords-display').innerText = `Posisi: X:${Math.round(camera.position.x)} Y:${Math.round(camera.position.y - player.height)} Z:${Math.round(camera.position.z)}`;
+
+            updateRaycasting();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
