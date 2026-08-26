@@ -1849,7 +1849,7 @@
                         player.velocity.y = 0;
                     }
                 } else if (camera.position.y <= groundHeight) {
-                    if (currentGamemode === "Survival" && player.velocity.y < -0.15) {
+                    if (currentGamemode === "Survival" && player.velocity.y < -0.25) {
                         const damage = Math.round(Math.abs(player.velocity.y) * 150);
                         playerHealth = Math.max(0, playerHealth - damage);
                         showToast(`<span style='color:red;'>Aduh! Terluka akibat jatuh (-${damage} HP)</span>`);
