@@ -146,6 +146,7 @@
             z-index: 20;
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
         .hud-btn {
             background: rgba(0,0,0,0.6);
@@ -358,7 +359,7 @@
             font-weight: bold;
         }
 
-        /* Lab Edu */
+        /* Lab Edu Panel */
         #edu-panel {
             display: none;
             position: absolute;
@@ -436,6 +437,109 @@
             cursor: pointer;
         }
 
+        /* UI Inventaris & Pembuat Blok Kustom */
+        #inventory-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 360px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: #1c2530;
+            border: 4px solid #2ecc71;
+            border-radius: 8px;
+            z-index: 200;
+            color: white;
+            padding: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        #inventory-panel h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #2ecc71;
+            font-size: 16px;
+            border-bottom: 2px dashed #2ecc71;
+            padding-bottom: 6px;
+        }
+        .inv-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .inv-item-card {
+            background: #0f172a;
+            border: 2px solid #475569;
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .inv-item-card:hover {
+            border-color: #f1c40f;
+        }
+        .inv-item-preview {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 4px auto;
+            border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .inv-item-name {
+            font-size: 8px;
+            word-break: break-all;
+        }
+
+        /* Creator Block Panel Sub UI */
+        #custom-block-creator {
+            display: none;
+            background: #0f172a;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .pixel-editor-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 1px;
+            width: 224px;
+            height: 224px;
+            background: #334155;
+            margin: 10px auto;
+            border: 2px solid #64748b;
+        }
+        .pixel-cell {
+            width: 100%;
+            height: 100%;
+            background-color: #22c55e;
+            cursor: pointer;
+        }
+        .creator-field {
+            margin: 8px 0;
+            text-align: left;
+            font-size: 10px;
+        }
+        .creator-field label {
+            display: block;
+            margin-bottom: 3px;
+            color: #94a3b8;
+        }
+        .creator-field input, .creator-field select {
+            width: 100%;
+            padding: 6px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
+            font-family: monospace;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 11px;
+        }
+
         #toast-notification {
             position: absolute;
             top: 25%;
@@ -460,7 +564,7 @@
     <div id="lobby-container">
         <div class="lobby-card">
             <h1>MINECRAFT PE v26.1</h1>
-            <p>KONTROL TAP & HOLD - FIXED OFFLINE & ONLINE</p>
+            <p>KONTROL TAP & HOLD - CUSTOM BLOCK & VISCOSITY</p>
             
             <label style="font-size: 10px; display: block; text-align: left;">NAMA KARAKTER:</label>
             <input type="text" id="username-input" class="lobby-input" value="SainsSteve" maxlength="12">
@@ -487,6 +591,7 @@
 
         <!-- Panel Tombol Pengaturan Lanjutan -->
         <div id="hud-controls">
+            <button class="hud-btn" id="btn-inventory-toggle" style="background: #27ae60;">INVENTORY</button>
             <button class="hud-btn" id="btn-mode-toggle">MODE: KREATIF</button>
             <button class="hud-btn" id="btn-chat-toggle">CHAT: TAMPIL</button>
             <button class="hud-btn" id="btn-save-world">SIMPAN</button>
@@ -524,6 +629,62 @@
 
         <!-- Hotbar Minecraft Campuran Blok Populer & Redstone Lanjutan -->
         <div id="hotbar-container"></div>
+
+        <!-- Panel Inventaris Utama & Custom Block Creator -->
+        <div id="inventory-panel">
+            <h2>Inventaris & Pembuat Blok</h2>
+            
+            <button class="close-edu-btn" onclick="toggleCustomBlockCreator()" style="background:#3b82f6; margin-bottom:12px;">+ BUAT BLOK BARU (16x16)</button>
+
+            <!-- Custom Block Creator Panel -->
+            <div id="custom-block-creator">
+                <div style="font-weight:bold; color:#3b82f6; font-size:12px; text-align:center;">EDITOR PIXEL BLOK 16x16</div>
+                
+                <div class="creator-field">
+                    <label>Nama Blok Kustom:</label>
+                    <input type="text" id="custom-block-name" value="Blok Kustomku" maxlength="15">
+                </div>
+
+                <div class="creator-field">
+                    <label>Warna Kuas Pen:</label>
+                    <input type="color" id="custom-color-picker" value="#22c55e">
+                </div>
+
+                <!-- Grid Pixel Editor 16x16 -->
+                <div class="pixel-editor-grid" id="pixel-grid"></div>
+
+                <div class="creator-field">
+                    <label>Sifat / Behavior Blok:</label>
+                    <select id="custom-behavior-select" onchange="onBehaviorTypeChange()">
+                        <option value="grass">Grass (Rumput)</option>
+                        <option value="dirt">Dirt (Tanah)</option>
+                        <option value="stone">Stone (Batu)</option>
+                        <option value="chair">Chair (Kursi Duduk)</option>
+                        <option value="water">Water (Cairan Mengalir)</option>
+                        <option value="redstone_block">Redstone Block (Sumber Listrik)</option>
+                        <option value="redstone_dust">Redstone Dust (Transmisi)</option>
+                        <option value="redstone_lamp">Redstone Lamp (Lampu Off/On)</option>
+                        <option value="piston">Piston (Hidrolik Pendorong)</option>
+                        <option value="tnt">TNT (Dinamit Meledak)</option>
+                        <option value="diamond_ore">Diamond Ore (Bijih)</option>
+                    </select>
+                </div>
+
+                <!-- Pengaturan Viskositas Kekentalan Cairan (Aktif bila behavior = water) -->
+                <div class="creator-field" id="viscosity-container" style="display:none;">
+                    <label>Viskositas / Kekentalan (1-9):</label>
+                    <input type="range" id="custom-viscosity" min="1" max="9" value="6" oninput="updateViscosityLabel()">
+                    <div style="font-size:9px; color:#f1c40f; margin-top:3px;" id="viscosity-info">Aliran Maksimal: 4 Blok</div>
+                </div>
+
+                <button class="close-edu-btn" onclick="saveCustomBlock()" style="background:#2ecc71; margin-top:8px;">SIMPAN KE HOTBAR</button>
+            </div>
+
+            <div style="font-size:10px; color:#94a3b8; margin:10px 0 5px 0;">DAFTAR BLOK TERSEDIA:</div>
+            <div class="inv-grid" id="inv-items-list"></div>
+
+            <button class="close-edu-btn" onclick="toggleInventoryPanel()" style="background:#7f8c8d; margin-top:8px;">TUTUP INVENTARIS</button>
+        </div>
 
         <!-- Modul Lab Elemen Kimia -->
         <div id="edu-panel">
@@ -575,7 +736,7 @@
             { id: 3, name: "Batu", type: "stone", color: 0x737373 },
             { id: 4, name: "Tempat Tidur", type: "bed", color: 0xe74c3c }, // Tidur klik (2x1x1)
             { id: 5, name: "Kursi Kayu", type: "chair", color: 0xd35400 }, // Duduk klik (Realistic)
-            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65 }, // Mengalir
+            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65, viscosity: 6 }, // Mengalir
             { id: 7, name: "Blok Redstone", type: "redstone_block", color: 0xc0392b }, // Sumber listrik konstan
             { id: 8, name: "Bubuk Redstone", type: "redstone_dust", color: 0x7f0000 }, // Transmisi
             { id: 9, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 }, // Menyala bila berlistrik
@@ -644,7 +805,14 @@
 
         // Prosedur Voxel Texture Prosedural Pixelated Mandiri (100% Bebas CORS!)
         const textureCache = {};
-        function createPixelTexture(baseColor, topColor, isGrass = false) {
+        function createPixelTexture(baseColor, topColor, isGrass = false, customCanvas = null) {
+            if (customCanvas) {
+                const tex = new THREE.CanvasTexture(customCanvas);
+                tex.magFilter = THREE.NearestFilter;
+                tex.minFilter = THREE.NearestFilter;
+                return tex;
+            }
+
             const cacheKey = `${baseColor}_${topColor}_${isGrass}`;
             if (textureCache[cacheKey]) return textureCache[cacheKey];
 
@@ -709,8 +877,11 @@
             { type: 'block', id: 9 },  // Lampu Redstone
             { type: 'block', id: 10 }, // Piston
             { type: 'block', id: 11 }, // TNT
-            { type: 'element', id: 92 } // Uranium
+            { type: 'inventory', id: 0 } // Tombol Buka Inventory
         ];
+
+        // Pixel matrix 16x16 untuk Custom Block Creator
+        let pixelMatrix16x16 = Array(16 * 16).fill('#22c55e');
 
         // Kontrol Mobile PE
         let isJoystickActive = false;
@@ -826,6 +997,7 @@
             setupHotbarUI();
             setupChatEngine();
             setupSurvivalControls();
+            initPixelEditorGrid();
 
             // Jalankan sirkuit Redstone & Aliran Air secara berkala
             setInterval(() => {
@@ -870,23 +1042,22 @@
                 const config = minecraftBlocks.find(b => b.id === id);
                 if (!config) return;
 
-                if (config.id === 5) { // Kursi Kayu Realistis (Realistic Chair)
+                const behaviorType = config.type || "stone";
+
+                if (behaviorType === "chair") { // Kursi Kayu Realistis (Realistic Chair)
                     const group = new THREE.Group();
                     const chairMat = new THREE.MeshLambertMaterial({ color: config.color });
                     
-                    // Alas Duduk (Seat)
                     const seatGeom = new THREE.BoxGeometry(0.8, 0.08, 0.8);
                     const seat = new THREE.Mesh(seatGeom, chairMat);
                     seat.position.y = 0;
                     group.add(seat);
                     
-                    // Sandaran Punggung (Backrest)
                     const backGeom = new THREE.BoxGeometry(0.8, 0.6, 0.08);
                     const back = new THREE.Mesh(backGeom, chairMat);
                     back.position.set(0, 0.3, -0.36);
                     group.add(back);
                     
-                    // Kaki Kursi Ramping (Legs)
                     const legGeom = new THREE.BoxGeometry(0.08, 0.45, 0.08);
                     const legOffsets = [
                         [-0.35, -0.225, -0.35],
@@ -905,7 +1076,7 @@
                     const yaw = Math.round(player.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
                     mesh.rotation.y = yaw;
 
-                } else if (config.id === 4) { // Tempat Tidur Realistis (Bed 2x1x1)
+                } else if (behaviorType === "bed") { // Tempat Tidur Realistis (Bed 2x1x1)
                     const group = new THREE.Group();
                     const redTex = createPixelTexture(0xe74c3c, null, false);
                     const whiteTex = createPixelTexture(0xffffff, null, false);
@@ -935,7 +1106,10 @@
                     const geometry = new THREE.BoxGeometry(1, 1, 1);
                     let material;
 
-                    if (config.id === 1) { 
+                    if (config.customCanvas) {
+                        const customTex = createPixelTexture(null, null, false, config.customCanvas);
+                        material = new THREE.MeshLambertMaterial({ map: customTex });
+                    } else if (behaviorType === "grass") { 
                         const sideTex = createPixelTexture(config.sideColor, config.topColor, true);
                         const topTex = createPixelTexture(config.topColor, null, false);
                         const bottomTex = createPixelTexture(config.sideColor, null, false);
@@ -948,13 +1122,13 @@
                             new THREE.MeshLambertMaterial({ map: sideTex }),
                             new THREE.MeshLambertMaterial({ map: sideTex })
                         ];
-                    } else if (config.id === 6) { 
+                    } else if (behaviorType === "water") { 
                         material = new THREE.MeshLambertMaterial({
                             color: config.color,
                             transparent: true,
-                            opacity: config.opacity
+                            opacity: config.opacity || 0.65
                         });
-                    } else if (config.id === 9) { 
+                    } else if (behaviorType === "redstone_lamp") { 
                         const isLit = state.powered ? true : false;
                         const lampColor = isLit ? 0xf39c12 : 0x3e2723;
                         material = new THREE.MeshLambertMaterial({
@@ -962,7 +1136,7 @@
                             emissive: lampColor,
                             emissiveIntensity: isLit ? 0.7 : 0.0
                         });
-                    } else if (config.id === 10) { 
+                    } else if (behaviorType === "piston") { 
                         const pistonTex = createPixelTexture(0x7f8c8d, null, false);
                         material = new THREE.MeshLambertMaterial({ map: pistonTex });
                     } else {
@@ -991,13 +1165,16 @@
             mesh.position.set(x, y, z);
             scene.add(mesh);
 
+            const blockConfig = minecraftBlocks.find(b => b.id === id) || {};
+            const initialFlow = blockConfig.viscosity !== undefined ? (10 - blockConfig.viscosity) : 4;
+
             mesh.userData = { type: type, id: id, powered: state.powered || false };
             voxelMap[key] = { 
                 mesh: mesh, 
                 type: type, 
                 id: id, 
                 powered: state.powered || false,
-                flowLevel: state.flowLevel !== undefined ? state.flowLevel : (id === 6 ? 4 : undefined)
+                flowLevel: state.flowLevel !== undefined ? state.flowLevel : (blockConfig.type === 'water' ? initialFlow : undefined)
             };
             blocksGroup.push(mesh);
         }
@@ -1031,14 +1208,16 @@
             for (const key in voxelMap) {
                 const voxel = voxelMap[key];
                 const pos = voxel.mesh.position;
+                const bConfig = minecraftBlocks.find(b => b.id === voxel.id);
+                const bType = bConfig ? bConfig.type : "";
 
-                if (voxel.type === 'block' && voxel.id === 7) {
+                if (voxel.type === 'block' && bType === 'redstone_block') {
                     powerSources.push(pos.clone());
-                } else if (voxel.type === 'block' && voxel.id === 9) {
+                } else if (voxel.type === 'block' && bType === 'redstone_lamp') {
                     lampBlocks.push(voxel);
-                } else if (voxel.type === 'block' && voxel.id === 10) {
+                } else if (voxel.type === 'block' && bType === 'piston') {
                     pistonBlocks.push(voxel);
-                } else if (voxel.type === 'block' && voxel.id === 11) {
+                } else if (voxel.type === 'block' && bType === 'tnt') {
                     tntBlocks.push(voxel);
                 }
             }
@@ -1052,8 +1231,9 @@
 
                 if (gotPower !== lamp.powered) {
                     const lPos = pos.clone();
+                    const currentId = lamp.id;
                     removeVoxel(lPos.x, lPos.y, lPos.z);
-                    createVoxel(lPos.x, lPos.y, lPos.z, 'block', 9, { powered: gotPower });
+                    createVoxel(lPos.x, lPos.y, lPos.z, 'block', currentId, { powered: gotPower });
                 }
             });
 
@@ -1068,12 +1248,15 @@
                     piston.pushed = true;
                     const pushY = pos.y + 1;
                     const targetVoxel = voxelMap[`${pos.x},${pushY},${pos.z}`];
-                    if (targetVoxel && targetVoxel.id !== 10) {
-                        const targetPos = targetVoxel.mesh.position.clone();
-                        const removed = removeVoxel(targetPos.x, targetPos.y, targetPos.z);
-                        if (removed) {
-                            createVoxel(targetPos.x, targetPos.y + 1, targetPos.z, removed.type, removed.id);
-                            showToast("Piston mengaktifkan daya dorong!");
+                    if (targetVoxel) {
+                        const tConfig = minecraftBlocks.find(b => b.id === targetVoxel.id);
+                        if (tConfig && tConfig.type !== 'piston') {
+                            const targetPos = targetVoxel.mesh.position.clone();
+                            const removed = removeVoxel(targetPos.x, targetPos.y, targetPos.z);
+                            if (removed) {
+                                createVoxel(targetPos.x, targetPos.y + 1, targetPos.z, removed.type, removed.id);
+                                showToast("Piston mengaktifkan daya dorong!");
+                            }
                         }
                     }
                 }
@@ -1092,22 +1275,28 @@
             });
         }
 
-        // --- SISTEM PEMRORESAN AKTIF ALIRAN AIR ---
+        // --- SISTEM PEMRORESAN AKTIF ALIRAN AIR BERDASARKAN VISKOSITAS ---
         function runWaterTick() {
             const waterUpdates = [];
             
             for (const key in voxelMap) {
                 const voxel = voxelMap[key];
-                if (voxel.type === 'block' && voxel.id === 6) { 
+                const config = minecraftBlocks.find(b => b.id === voxel.id);
+
+                if (voxel.type === 'block' && config && config.type === 'water') { 
                     const pos = voxel.mesh.position;
                     const x = Math.round(pos.x);
                     const y = Math.round(pos.y);
                     const z = Math.round(pos.z);
-                    const level = voxel.flowLevel !== undefined ? voxel.flowLevel : 4;
+                    
+                    const viscosity = config.viscosity !== undefined ? config.viscosity : 6;
+                    const maxFlowRange = Math.max(1, 10 - viscosity); // Rumpus: Luas Maximal = 10 - viscosity
+
+                    const level = voxel.flowLevel !== undefined ? voxel.flowLevel : maxFlowRange;
 
                     const downKey = `${x},${y-1},${z}`;
                     if (y - 1 > -15 && !voxelMap[downKey]) {
-                        waterUpdates.push({ x: x, y: y-1, z: z, level: 4 });
+                        waterUpdates.push({ x: x, y: y-1, z: z, id: voxel.id, level: maxFlowRange });
                     } else if (level > 1) {
                         const neighbors = [
                             { x: x + 1, y: y, z: z },
@@ -1118,7 +1307,7 @@
                         neighbors.forEach(n => {
                             const nKey = `${n.x},${n.y},${n.z}`;
                             if (!voxelMap[nKey]) {
-                                waterUpdates.push({ x: n.x, y: n.y, z: n.z, level: level - 1 });
+                                waterUpdates.push({ x: n.x, y: n.y, z: n.z, id: voxel.id, level: level - 1 });
                             }
                         });
                     }
@@ -1126,7 +1315,7 @@
             }
 
             waterUpdates.forEach(u => {
-                createVoxel(u.x, u.y, u.z, 'block', 6, { flowLevel: u.level });
+                createVoxel(u.x, u.y, u.z, 'block', u.id, { flowLevel: u.level });
             });
         }
 
@@ -1171,7 +1360,7 @@
                     healthUI.style.display = "flex";
                     toggleBtn.innerText = "MODE: SURVIVAL";
                     document.getElementById('mode-display').innerText = "Mode: Survival";
-                    showToast("Mode Bertahan Hidup diaktifkan! Hati-hati terhadap jatuh.");
+                    showToast("Mode Bertahan Hidup diaktifkan!");
                 } else {
                     currentGamemode = "Creative";
                     healthUI.style.display = "none";
@@ -1193,6 +1382,11 @@
                     chatToggleBtn.innerText = "CHAT: SEMBUNYI";
                     showToast("Kotak obrolan disembunyikan");
                 }
+            });
+
+            document.getElementById('btn-inventory-toggle').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleInventoryPanel();
             });
 
             document.getElementById('btn-save-world').addEventListener('click', () => {
@@ -1302,6 +1496,7 @@
                 if (e.target.closest('#hotbar-container') || 
                     e.target.closest('#lobby-container') || 
                     e.target.closest('#edu-panel') || 
+                    e.target.closest('#inventory-panel') || 
                     e.target.closest('#chat-container') || 
                     e.target.closest('.btn-action') || 
                     e.target.closest('#hud-controls') || 
@@ -1416,14 +1611,16 @@
             if (currentFocusedBlock) {
                 const info = currentFocusedBlock.userData;
                 const pos = currentFocusedBlock.position;
+                const bConfig = minecraftBlocks.find(b => b.id === info.id);
+                const bType = bConfig ? bConfig.type : "";
 
-                if (info.type === 'block' && info.id === 4) {
+                if (info.type === 'block' && bType === 'bed') {
                     triggerSleepTransition();
                     return;
-                } else if (info.type === 'block' && info.id === 5) {
+                } else if (info.type === 'block' && bType === 'chair') {
                     triggerSitTransition(pos.clone());
                     return;
-                } else if (info.type === 'block' && info.id === 11) {
+                } else if (info.type === 'block' && bType === 'tnt') {
                     triggerTntExplosion(pos.x, pos.y, pos.z);
                     return;
                 }
@@ -1480,6 +1677,11 @@
 
         // Penempatan Blok
         function placeVoxelAction() {
+            if (selectedItem.type === 'inventory') {
+                toggleInventoryPanel();
+                return;
+            }
+
             let bx, by, bz;
             if (currentFocusedBlock) {
                 const intersect = raycaster.intersectObjects(blocksGroup)[0];
@@ -1610,9 +1812,15 @@
                 
                 if (item.type === 'block') {
                     const b = minecraftBlocks.find(bl => bl.id === item.id);
+                    const colorHex = b.color ? b.color.toString(16).padStart(6,'0') : '5c9e32';
                     slot.innerHTML = `
-                        <div class="slot-color-box" style="background-color:#${b.color.toString(16).padStart(6,'0')};"></div>
+                        <div class="slot-color-box" style="background-color:#${colorHex};"></div>
                         <span class="slot-name">${b.name}</span>
+                    `;
+                } else if (item.type === 'inventory') {
+                    slot.innerHTML = `
+                        <span class="slot-symbol" style="color:#2ecc71;">📦</span>
+                        <span class="slot-name">INVENTORY</span>
                     `;
                 } else {
                     const el = elementDatabase[item.id];
@@ -1634,6 +1842,131 @@
         function changeSelectedSlot(index) {
             activeHotbarIndex = index;
             setupHotbarUI();
+            if (selectedItem.type === 'inventory') {
+                toggleInventoryPanel();
+            }
+        }
+
+        // --- SISTEM PANEL INVENTARIS & CUSTOM BLOCK CREATOR 16x16 ---
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            const isVisible = panel.style.display === 'block';
+            panel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                renderInventoryItemsList();
+            }
+        }
+
+        function renderInventoryItemsList() {
+            const grid = document.getElementById('inv-items-list');
+            grid.innerHTML = "";
+
+            minecraftBlocks.forEach((block) => {
+                const itemCard = document.createElement('div');
+                itemCard.className = 'inv-item-card';
+                const colorHex = block.color ? block.color.toString(16).padStart(6,'0') : '5c9e32';
+                
+                itemCard.innerHTML = `
+                    <div class="inv-item-preview" style="background-color:#${colorHex};"></div>
+                    <div class="inv-item-name">${block.name}</div>
+                `;
+
+                itemCard.addEventListener('click', () => {
+                    hotbarSelection[activeHotbarIndex] = { type: 'block', id: block.id };
+                    setupHotbarUI();
+                    showToast(`Disimpan ke Hotbar: <strong>${block.name}</strong>`);
+                    toggleInventoryPanel();
+                });
+
+                grid.appendChild(itemCard);
+            });
+        }
+
+        function toggleCustomBlockCreator() {
+            const creator = document.getElementById('custom-block-creator');
+            creator.style.display = (creator.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function initPixelEditorGrid() {
+            const grid = document.getElementById('pixel-grid');
+            grid.innerHTML = "";
+            pixelMatrix16x16.fill('#22c55e');
+
+            for (let i = 0; i < 256; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'pixel-cell';
+                cell.style.backgroundColor = pixelMatrix16x16[i];
+                
+                const drawColor = () => {
+                    const selectedColor = document.getElementById('custom-color-picker').value;
+                    cell.style.backgroundColor = selectedColor;
+                    pixelMatrix16x16[i] = selectedColor;
+                };
+
+                cell.addEventListener('mousedown', drawColor);
+                cell.addEventListener('mouseenter', (e) => {
+                    if (e.buttons === 1) drawColor();
+                });
+                cell.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    drawColor();
+                }, { passive: false });
+
+                grid.appendChild(cell);
+            }
+        }
+
+        function onBehaviorTypeChange() {
+            const behavior = document.getElementById('custom-behavior-select').value;
+            const visContainer = document.getElementById('viscosity-container');
+            if (behavior === 'water') {
+                visContainer.style.display = 'block';
+                updateViscosityLabel();
+            } else {
+                visContainer.style.display = 'none';
+            }
+        }
+
+        function updateViscosityLabel() {
+            const viscosity = parseInt(document.getElementById('custom-viscosity').value);
+            const maxFlow = Math.max(1, 10 - viscosity);
+            document.getElementById('viscosity-info').innerText = `Aliran Maksimal: ${maxFlow} Blok (Rumus: 10 - ${viscosity})`;
+        }
+
+        function saveCustomBlock() {
+            const name = document.getElementById('custom-block-name').value.trim() || "Blok Kustom";
+            const behavior = document.getElementById('custom-behavior-select').value;
+            const viscosity = parseInt(document.getElementById('custom-viscosity').value);
+
+            // Buat Canvas 16x16 untuk Tekstur Custom
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    ctx.fillStyle = pixelMatrix16x16[y * 16 + x];
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+
+            const newBlockId = minecraftBlocks.length + 100;
+            const newBlockConfig = {
+                id: newBlockId,
+                name: name,
+                type: behavior,
+                color: parseInt(pixelMatrix16x16[0].replace('#', '0x')),
+                customCanvas: canvas,
+                viscosity: behavior === 'water' ? viscosity : undefined
+            };
+
+            minecraftBlocks.push(newBlockConfig);
+
+            hotbarSelection[activeHotbarIndex] = { type: 'block', id: newBlockId };
+            setupHotbarUI();
+            toggleInventoryPanel();
+            showToast(`Blok Kustom <strong>${name}</strong> berhasil dibuat!`);
         }
 
         // --- LAB KIMIA ---
@@ -1756,11 +2089,12 @@
                         highlightBox.rotation.set(0, 0, 0);
 
                         const data = currentFocusedBlock.userData;
-                        if (data && data.type === 'block') {
-                            if (data.id === 4) { 
+                        const blockCfg = minecraftBlocks.find(b => b.id === data.id);
+                        if (data && data.type === 'block' && blockCfg) {
+                            if (blockCfg.type === 'bed') { 
                                 highlightBox.scale.set(1, 1, 2);
                                 highlightBox.rotation.copy(currentFocusedBlock.rotation);
-                            } else if (data.id === 5) { 
+                            } else if (blockCfg.type === 'chair') { 
                                 highlightBox.scale.set(1, 1.2, 1);
                             }
                         }
@@ -1769,7 +2103,7 @@
 
                         const hudText = document.getElementById('block-focused');
                         if (data.type === 'block') {
-                            hudText.innerHTML = `Membidik: <strong>${minecraftBlocks.find(b => b.id === data.id).name}</strong>`;
+                            hudText.innerHTML = `Membidik: <strong>${blockCfg ? blockCfg.name : 'Blok'}</strong>`;
                         } else {
                             hudText.innerHTML = `Membidik: <strong style="color:#e67e22;">Unsur ${elementDatabase[data.id].name}</strong>`;
                         }
@@ -1827,17 +2161,24 @@
                 const standingBlock = voxelMap[`${px},${Math.round(camera.position.y - player.height)},${pz}`];
                 
                 let isInWater = false;
-                if (standingBlock && standingBlock.id === 6) {
-                    isInWater = true;
+                if (standingBlock) {
+                    const standingCfg = minecraftBlocks.find(b => b.id === standingBlock.id);
+                    if (standingCfg && standingCfg.type === 'water') {
+                        isInWater = true;
+                    }
                 }
 
                 camera.position.y += player.velocity.y;
                 let groundHeight = -10;
 
                 for (let y = 10; y > -10; y--) {
-                    if (voxelMap[`${px},${y},${pz}`] && voxelMap[`${px},${y},${pz}`].id !== 6) { 
-                        groundHeight = y + 0.5 + player.height;
-                        break;
+                    const blockInPos = voxelMap[`${px},${y},${pz}`];
+                    if (blockInPos) {
+                        const bCfg = minecraftBlocks.find(b => b.id === blockInPos.id);
+                        if (bCfg && bCfg.type !== 'water') { 
+                            groundHeight = y + 0.5 + player.height;
+                            break;
+                        }
                     }
                 }
 
@@ -1849,8 +2190,9 @@
                         player.velocity.y = 0;
                     }
                 } else if (camera.position.y <= groundHeight) {
-                    if (currentGamemode === "Survival" && player.velocity.y < -0.25) {
-                        const damage = Math.round(Math.abs(player.velocity.y) * 150);
+                    // Ambang batas jatuh (-0.22) sehingga lompatan biasa tidak memberikan damage
+                    if (currentGamemode === "Survival" && player.velocity.y < -0.22) {
+                        const damage = Math.round((Math.abs(player.velocity.y) - 0.20) * 200);
                         playerHealth = Math.max(0, playerHealth - damage);
                         showToast(`<span style='color:red;'>Aduh! Terluka akibat jatuh (-${damage} HP)</span>`);
                         
