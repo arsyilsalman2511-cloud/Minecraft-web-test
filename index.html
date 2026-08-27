@@ -6,11 +6,7 @@
     <title>Minecraft Mobile PE & Education Edition - Ultimate</title>
     <!-- Three.js (Grafis 3D Engine) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Firebase Legacy SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- Supabase Client JS (Opsi Cloud Database) -->
+    <!-- Supabase Client JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body, html {
@@ -726,6 +722,20 @@
     </div>
 
     <script>
+        // --- KONFIGURASI SUPABASE ---
+        const SUPABASE_URL = 'https://cygedpwyqnpggliemawp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Z2VkcHd5cW5wZ2dsaWVtYXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NzM2NTQsImV4cCI6MjEwMzM0OTY1NH0.sOArw0RueqxMl4vRArXiJjdyKem__Xsqml16VzlqyBM';
+
+        let supabaseClient = null;
+        if (typeof supabase !== 'undefined') {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("Supabase Client berhasil terhubung!");
+            } catch(e) {
+                console.warn("Gagal inisialisasi Supabase Client:", e);
+            }
+        }
+
         // --- DATABASE BLOK UTAMA ---
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
@@ -765,33 +775,7 @@
         let isPlayerSitting = false;
         let originalCameraY = 0;
 
-        let dbUser = null;
-        let myPlayerId = "offline_" + Math.floor(Math.random() * 1000);
-        let playersRef = null;
-        let blocksRef = null;
-        let chatsRef = null;
-        
-        let firebaseOnlineActive = false;
-        let appId = 'minecraft-edu-mega-26';
-
-        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-            try {
-                const configParsed = JSON.parse(__firebase_config);
-                firebase.initializeApp(configParsed);
-                const auth = firebase.auth();
-                const db = firebase.firestore();
-                
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'minecraft-edu-mega-26';
-                playersRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('players');
-                blocksRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('blocks');
-                chatsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('chats');
-                
-                firebaseOnlineActive = true;
-            } catch(e) {
-                console.warn("Inisialisasi Firebase gagal, berjalan dalam mode offline:", e);
-            }
-        }
-
+        let myPlayerId = "player_" + Math.floor(Math.random() * 1000);
         let myUsername = "Steve_PE";
         let worldSeed = "999";
         let numericSeed = 999;
@@ -903,7 +887,7 @@
             buildHotbarUI();
             buildInventoryUI();
             initPixelEditor();
-            initFirebaseOnline();
+            initSupabaseOnline();
             animate();
         });
 
@@ -950,12 +934,12 @@
                     const heightOffset = Math.floor(Math.sin((x + numericSeed) * 0.2) * 2 + Math.cos((z + numericSeed) * 0.2) * 2);
                     const surfaceY = 0 + heightOffset;
 
-                    createBlockMesh(x, surfaceY, z, 1);
+                    createBlockMesh(x, surfaceY, z, 1, null, false);
 
                     for (let y = surfaceY - 1; y >= surfaceY - 3; y--) {
-                        createBlockMesh(x, y, z, 2);
+                        createBlockMesh(x, y, z, 2, null, false);
                     }
-                    createBlockMesh(x, surfaceY - 4, z, 3);
+                    createBlockMesh(x, surfaceY - 4, z, 3, null, false);
                 }
             }
         }
@@ -965,9 +949,9 @@
             return minecraftBlocks.find(b => b.id === blockId) || minecraftBlocks[0];
         }
 
-        function createBlockMesh(x, y, z, blockId, customCanvas = null) {
+        function createBlockMesh(x, y, z, blockId, customCanvas = null, syncToCloud = true) {
             const key = `${x},${y},${z}`;
-            if (voxelMap[key]) removeBlockMesh(x, y, z);
+            if (voxelMap[key]) removeBlockMesh(x, y, z, false);
 
             const bData = getBlockData(blockId);
             const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -1007,10 +991,15 @@
             voxelMap[key] = mesh;
 
             updateRedstoneNetwork();
+
+            if (syncToCloud && supabaseClient) {
+                saveBlockToSupabase(x, y, z, blockId);
+            }
+
             return mesh;
         }
 
-        function removeBlockMesh(x, y, z) {
+        function removeBlockMesh(x, y, z, syncToCloud = true) {
             const key = `${x},${y},${z}`;
             const mesh = voxelMap[key];
             if (mesh) {
@@ -1018,6 +1007,10 @@
                 blocksGroup = blocksGroup.filter(b => b !== mesh);
                 delete voxelMap[key];
                 updateRedstoneNetwork();
+
+                if (syncToCloud && supabaseClient) {
+                    removeBlockFromSupabase(x, y, z);
+                }
             }
         }
 
@@ -1399,47 +1392,70 @@
             toggleEduPanel();
         }
 
-        function initFirebaseOnline() {
-            if (!firebaseOnlineActive || !playersRef) {
-                console.log("Menjalankan sesi Singleplayer / Offline.");
+        // --- FUNGSI CLOUD INTEGRASI SUPABASE ---
+        async function saveBlockToSupabase(x, y, z, blockId) {
+            if (!supabaseClient) return;
+            try {
+                await supabaseClient.from('world_blocks').upsert([
+                    { x: Math.round(x), y: Math.round(y), z: Math.round(z), block_type: String(blockId) }
+                ]);
+            } catch (err) {
+                console.error("Gagal menyimpan ke Supabase:", err);
+            }
+        }
+
+        async function removeBlockFromSupabase(x, y, z) {
+            if (!supabaseClient) return;
+            try {
+                await supabaseClient.from('world_blocks')
+                    .delete()
+                    .eq('x', Math.round(x))
+                    .eq('y', Math.round(y))
+                    .eq('z', Math.round(z));
+            } catch (err) {
+                console.error("Gagal menghapus dari Supabase:", err);
+            }
+        }
+
+        async function loadWorldFromSupabase() {
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient.from('world_blocks').select('*');
+            if (error) {
+                console.error("Gagal memuat dari Supabase:", error);
+                return;
+            }
+            if (data && data.length > 0) {
+                data.forEach(b => {
+                    createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
+                });
+                showToast(`Dimuat ${data.length} blok dari Supabase Cloud!`);
+            }
+        }
+
+        function initSupabaseOnline() {
+            if (!supabaseClient) {
+                console.log("Supabase belum terhubung, berjalan dalam mode lokal.");
                 return;
             }
 
-            playersRef.onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    const pId = change.doc.id;
-                    if (pId === myPlayerId) return;
+            // Load blok yang tersimpan di cloud saat mulai
+            loadWorldFromSupabase();
 
-                    if (change.type === "added" || change.type === "modified") {
-                        if (!otherPlayers[pId]) {
-                            const pGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-                            const pMat = new THREE.MeshLambertMaterial({ color: 0x3498db });
-                            const pMesh = new THREE.Mesh(pGeo, pMat);
-                            scene.add(pMesh);
-                            otherPlayers[pId] = pMesh;
-                        }
-                        otherPlayers[pId].position.set(data.x, data.y, data.z);
-                    } else if (change.type === "removed") {
-                        if (otherPlayers[pId]) {
-                            scene.remove(otherPlayers[pId]);
-                            delete otherPlayers[pId];
+            // Berlangganan perubahan real-time dari pemain lain
+            supabaseClient
+                .channel('public:world_blocks')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'world_blocks' }, payload => {
+                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                        const b = payload.new;
+                        createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
+                    } else if (payload.eventType === 'DELETE') {
+                        const b = payload.old;
+                        if (b && b.x !== undefined) {
+                            removeBlockMesh(b.x, b.y, b.z, false);
                         }
                     }
-                });
-            });
-
-            setInterval(() => {
-                if (firebaseOnlineActive && playersRef) {
-                    playersRef.doc(myPlayerId).set({
-                        username: myUsername,
-                        x: player.position.x,
-                        y: player.position.y,
-                        z: player.position.z,
-                        lastUpdate: Date.now()
-                    }, { merge: true });
-                }
-            }, 200);
+                })
+                .subscribe();
         }
 
         document.getElementById('btn-mode-toggle').addEventListener('click', () => {
@@ -1493,7 +1509,7 @@
             voxelMap = {};
 
             saveData.forEach(item => {
-                createBlockMesh(item.x, item.y, item.z, item.id);
+                createBlockMesh(item.x, item.y, item.z, item.id, null, false);
             });
             showToast("Dunia Berhasil Dimuat Kembali!");
         });
