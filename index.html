@@ -1104,39 +1104,51 @@
 
         // --- SETUP KONTROL KEYBOARD & MOUSE PC ---
         function setupPCControls() {
+            let isMouseDown = false;
+            let prevMouseX = 0, prevMouseY = 0;
+
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
-                if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
-                if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
-                if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
-                if (e.code === 'Space') {
+                const key = e.key.toLowerCase();
+                if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
+                if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
+                if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
+                if (key === 'd' || e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
+                if (e.code === 'Space' || key === ' ') {
                     keys.space = true;
                     if (player.onGround && !isPlayerSitting) {
-                        player.velocity.y = 0.15;
+                        player.velocity.y = 0.18;
                         player.onGround = false;
                     }
                 }
             });
 
             window.addEventListener('keyup', (e) => {
-                if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
-                if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
-                if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
-                if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
-                if (e.code === 'Space') keys.space = false;
+                const key = e.key.toLowerCase();
+                if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
+                if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
+                if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
+                if (key === 'd' || e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
+                if (e.code === 'Space' || key === ' ') keys.space = false;
             });
 
-            // Lock Kursor Mouse untuk PC
+            // Lock Kursor Mouse & Drag Control untuk PC
             const gameContainer = document.getElementById('game-container');
-            gameContainer.addEventListener('click', (e) => {
+            
+            gameContainer.addEventListener('mousedown', (e) => {
                 if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#chat-container') || e.target.closest('#hotbar-container')) {
                     return;
                 }
-                if (document.pointerLockElement !== renderer.domElement) {
+                isMouseDown = true;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+
+                if (!isPointerLocked) {
                     renderer.domElement.requestPointerLock();
                 }
             });
+
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
 
             document.addEventListener('pointerlockchange', () => {
                 isPointerLocked = (document.pointerLockElement === renderer.domElement);
@@ -1144,161 +1156,47 @@
 
             document.addEventListener('mousemove', (e) => {
                 if (isPointerLocked) {
-                    player.rotation.y -= e.movementX * 0.002;
-                    player.rotation.x -= e.movementY * 0.002;
+                    player.rotation.y -= e.movementX * 0.003;
+                    player.rotation.x -= e.movementY * 0.003;
+                    player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
+                } else if (isMouseDown) {
+                    const dx = e.clientX - prevMouseX;
+                    const dy = e.clientY - prevMouseY;
+                    prevMouseX = e.clientX;
+                    prevMouseY = e.clientY;
+
+                    player.rotation.y -= dx * 0.004;
+                    player.rotation.x -= dy * 0.004;
                     player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
                 }
             });
 
             // Klik Kanan / Kiri Mouse PC untuk Pasang / Hancurkan Blok
-            renderer.domElement.addEventListener('mousedown', (e) => {
-                if (!isPointerLocked || !targetedBlockInfo) return;
+            renderer.domElement.addEventListener('click', (e) => {
+                if (!targetedBlockInfo) return;
                 const mesh = targetedBlockInfo.mesh;
 
                 if (e.button === 0) {
-                    // Klik Kiri: Hancurkan atau Interaksi
                     if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
                         interactWithBlock(mesh);
                     } else {
                         removeBlockMesh(mesh.position.x, mesh.position.y, mesh.position.z);
                         showToast("Blok Dihancurkan!");
                     }
-                } else if (e.button === 2) {
-                    // Klik Kanan: Pasang Blok
-                    const normal = targetedBlockInfo.face.normal;
-                    const newX = mesh.position.x + normal.x;
-                    const newY = mesh.position.y + normal.y;
-                    const newZ = mesh.position.z + normal.z;
-
-                    if (selectedItem.type === 'block') {
-                        createBlockMesh(newX, newY, newZ, selectedItem.id);
-                    }
                 }
             });
 
-            window.addEventListener('contextmenu', (e) => {
-                if (isPointerLocked) e.preventDefault();
-            });
-        }
-
-        // --- SETUP KONTROL TOUCH / JOYSTICK MOBILE ---
-        function setupTouchAndControls() {
-            const joystickContainer = document.getElementById('joystick-container');
-            const joystickKnob = document.getElementById('joystick-knob');
-            let joyTouchId = null;
-            let joyCenter = { x: 0, y: 0 };
-
-            joystickContainer.addEventListener('touchstart', (e) => {
+            renderer.domElement.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
-                const touch = e.changedTouches[0];
-                joyTouchId = touch.identifier;
-                const rect = joystickContainer.getBoundingClientRect();
-                joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-            }, { passive: false });
+                if (!targetedBlockInfo) return;
+                const mesh = targetedBlockInfo.mesh;
+                const normal = targetedBlockInfo.face.normal;
+                const newX = mesh.position.x + normal.x;
+                const newY = mesh.position.y + normal.y;
+                const newZ = mesh.position.z + normal.z;
 
-            window.addEventListener('touchmove', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    if (touch.identifier === joyTouchId) {
-                        const dx = touch.clientX - joyCenter.x;
-                        const dy = touch.clientY - joyCenter.y;
-                        const dist = Math.min(Math.hypot(dx, dy), 40);
-                        const angle = Math.atan2(dy, dx);
-
-                        const knobX = Math.cos(angle) * dist;
-                        const knobY = Math.sin(angle) * dist;
-                        joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-
-                        inputState.forward = -Math.sin(angle) * (dist / 40);
-                        inputState.side = Math.cos(angle) * (dist / 40);
-                    } else if (touch.identifier === touchLookId) {
-                        const movementX = touch.clientX - lastTouchX;
-                        const movementY = touch.clientY - lastTouchY;
-                        lastTouchX = touch.clientX;
-                        lastTouchY = touch.clientY;
-
-                        player.rotation.x -= movementY * 0.005;
-                        player.rotation.y -= movementX * 0.005;
-                        player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
-                    }
-                }
-            }, { passive: false });
-
-            const resetJoystick = (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    if (e.changedTouches[i].identifier === joyTouchId) {
-                        joyTouchId = null;
-                        joystickKnob.style.transform = `translate(0px, 0px)`;
-                        inputState.forward = 0;
-                        inputState.side = 0;
-                    } else if (e.changedTouches[i].identifier === touchLookId) {
-                        touchLookId = null;
-                    }
-                }
-            };
-
-            window.addEventListener('touchend', resetJoystick);
-            window.addEventListener('touchcancel', resetJoystick);
-
-            window.addEventListener('touchstart', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    if (touch.clientX > window.innerWidth / 2 && touchLookId === null) {
-                        touchLookId = touch.identifier;
-                        lastTouchX = touch.clientX;
-                        lastTouchY = touch.clientY;
-                    }
-                }
-            });
-
-            let touchTimer = null;
-            let touchStartPos = { x: 0, y: 0 };
-
-            window.addEventListener('touchstart', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#hotbar-container') || e.target.closest('#joystick-container')) return;
-
-                const touch = e.touches[0];
-                touchStartPos = { x: touch.clientX, y: touch.clientY };
-
-                touchTimer = setTimeout(() => {
-                    if (targetedBlockInfo) {
-                        const p = targetedBlockInfo.mesh.position;
-                        removeBlockMesh(p.x, p.y, p.z);
-                        showToast("Blok Dihancurkan!");
-                    }
-                }, 500);
-            });
-
-            window.addEventListener('touchend', (e) => {
-                if (touchTimer) {
-                    clearTimeout(touchTimer);
-                    const touch = e.changedTouches[0];
-                    const dist = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
-
-                    if (dist < 10 && targetedBlockInfo) {
-                        if (e.target.tagName === 'BUTTON' || e.target.closest('#hotbar-container')) return;
-
-                        const mesh = targetedBlockInfo.mesh;
-                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
-                            interactWithBlock(mesh);
-                        } else {
-                            const normal = targetedBlockInfo.face.normal;
-                            const newX = mesh.position.x + normal.x;
-                            const newY = mesh.position.y + normal.y;
-                            const newZ = mesh.position.z + normal.z;
-
-                            if (selectedItem.type === 'block') {
-                                createBlockMesh(newX, newY, newZ, selectedItem.id);
-                            }
-                        }
-                    }
-                }
-            });
-
-            document.getElementById('btn-jump').addEventListener('click', () => {
-                if (player.onGround && !isPlayerSitting) {
-                    player.velocity.y = 0.15;
-                    player.onGround = false;
+                if (selectedItem.type === 'block') {
+                    createBlockMesh(newX, newY, newZ, selectedItem.id);
                 }
             });
         }
@@ -1650,31 +1548,44 @@
                 forwardInput = Math.max(-1, Math.min(1, forwardInput));
                 sideInput = Math.max(-1, Math.min(1, sideInput));
 
-                const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
-                const dirY = Math.sin(player.rotation.x);
-                const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
-                const lookTarget = player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ));
-                camera.lookAt(lookTarget);
-
-                const moveForward = forwardInput * player.speed;
-                const moveSide = sideInput * player.speed;
-
-                const frontVector = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(moveForward);
-                const sideVector = new THREE.Vector3(Math.cos(player.rotation.y), 0, -Math.sin(player.rotation.y)).multiplyScalar(moveSide);
+                const moveSpeed = player.speed;
+                const frontVector = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(forwardInput * moveSpeed);
+                const sideVector = new THREE.Vector3(Math.cos(player.rotation.y), 0, -Math.sin(player.rotation.y)).multiplyScalar(sideInput * moveSpeed);
 
                 player.position.add(frontVector).add(sideVector);
 
+                // Gravitasi & Deteksi Kolisi dengan Blok di Bawah Pemain
                 player.velocity.y -= 0.008;
                 player.position.y += player.velocity.y;
 
-                const groundY = 1.6;
-                if (player.position.y <= groundY) {
-                    player.position.y = groundY;
+                // Cari ketinggian tanah dari voxel map
+                const pX = Math.round(player.position.x);
+                const pZ = Math.round(player.position.z);
+                let highestGroundY = -10;
+
+                for (let checkY = Math.floor(player.position.y + 1); checkY >= Math.floor(player.position.y - 4); checkY--) {
+                    const blockKey = `${pX},${checkY},${pZ}`;
+                    if (voxelMap[blockKey]) {
+                        highestGroundY = checkY + 0.5 + player.height;
+                        break;
+                    }
+                }
+
+                if (highestGroundY === -10) highestGroundY = player.height;
+
+                if (player.position.y <= highestGroundY) {
+                    player.position.y = highestGroundY;
                     player.velocity.y = 0;
                     player.onGround = true;
                 }
 
+                const dirX = Math.sin(player.rotation.y) * Math.cos(player.rotation.x);
+                const dirY = Math.sin(player.rotation.x);
+                const dirZ = Math.cos(player.rotation.y) * Math.cos(player.rotation.x);
+                const lookTarget = player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ));
+                
                 camera.position.copy(player.position);
+                camera.lookAt(lookTarget);
             }
 
             raycaster.setFromCamera(mouseCenter, camera);
