@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Minecraft Mobile PE & Education Edition - Ultimate</title>
-    <!-- Three.js (Grafis 3D) -->
+    <!-- Three.js (Grafis 3D Engine) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Firebase Legacy SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Supabase Client JS (Opsi Cloud Database) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body, html {
@@ -106,7 +107,7 @@
             box-shadow: none;
         }
 
-        /* Bidikan */
+        /* Bidikan Crosshair */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -248,7 +249,7 @@
             cursor: pointer;
         }
 
-        /* Virtual Joystick */
+        /* Virtual Joystick Mobile */
         #joystick-container {
             position: absolute;
             bottom: 30px;
@@ -273,7 +274,7 @@
             touch-action: none;
         }
 
-        /* Tombol Aksi */
+        /* Tombol Aksi Sentuh */
         .btn-action {
             position: absolute;
             width: 58px;
@@ -346,11 +347,6 @@
             height: 22px;
             border-radius: 3px;
             border: 1px solid rgba(0,0,0,0.4);
-        }
-        .slot-symbol {
-            font-size: 11px;
-            font-weight: bold;
-            color: #111;
         }
         .slot-name {
             font-size: 6px;
@@ -628,7 +624,7 @@
         <div id="btn-edu" class="btn-action"><span>KIMIA</span></div>
         <button id="btn-unseat" class="btn-action"><span>BERDIRI</span></button>
 
-        <!-- Hotbar Minecraft Campuran Blok Populer & Redstone Lanjutan -->
+        <!-- Hotbar Minecraft -->
         <div id="hotbar-container"></div>
 
         <!-- Panel Inventaris Utama & Custom Block Creator -->
@@ -671,7 +667,7 @@
                     </select>
                 </div>
 
-                <!-- Pengaturan Viskositas Kekentalan Cairan (Aktif bila behavior = water) -->
+                <!-- Pengaturan Viskositas Kekentalan Cairan -->
                 <div class="creator-field" id="viscosity-container" style="display:none;">
                     <label>Viskositas / Kekentalan (1-9):</label>
                     <input type="range" id="custom-viscosity" min="1" max="9" value="6" oninput="updateViscosityLabel()">
@@ -730,19 +726,19 @@
     </div>
 
     <script>
-        // --- DAFTAR DATABASE BLOK BERTEKSTUR DAN REKAYASA (Kreatif & Survival) ---
+        // --- DATABASE BLOK UTAMA ---
         const minecraftBlocks = [
-            { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 }, // topgrass segar hijau
+            { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
             { id: 2, name: "Tanah", type: "dirt", color: 0x866043 },
             { id: 3, name: "Batu", type: "stone", color: 0x737373 },
-            { id: 4, name: "Tempat Tidur", type: "bed", color: 0xe74c3c }, // Tidur klik (2x1x1)
-            { id: 5, name: "Kursi Kayu", type: "chair", color: 0xd35400 }, // Duduk klik (Realistic)
-            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65, viscosity: 6 }, // Mengalir
-            { id: 7, name: "Blok Redstone", type: "redstone_block", color: 0xc0392b }, // Sumber listrik konstan
-            { id: 8, name: "Bubuk Redstone", type: "redstone_dust", color: 0x7f0000 }, // Transmisi
-            { id: 9, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 }, // Menyala bila berlistrik
-            { id: 10, name: "Piston Hidrolik", type: "piston", color: 0x7f8c8d }, // Dorong voxel di depan
-            { id: 11, name: "TNT Dinamit", type: "tnt", color: 0xd35400 }, // Ledakan hancur
+            { id: 4, name: "Tempat Tidur", type: "bed", color: 0xe74c3c },
+            { id: 5, name: "Kursi Kayu", type: "chair", color: 0xd35400 },
+            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65, viscosity: 6 },
+            { id: 7, name: "Blok Redstone", type: "redstone_block", color: 0xc0392b },
+            { id: 8, name: "Bubuk Redstone", type: "redstone_dust", color: 0x7f0000 },
+            { id: 9, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 },
+            { id: 10, name: "Piston Hidrolik", type: "piston", color: 0x7f8c8d },
+            { id: 11, name: "TNT Dinamit", type: "tnt", color: 0xd35400 },
             { id: 12, name: "Bijih Berlian", type: "diamond_ore", color: 0x7bc6cc }
         ];
 
@@ -757,21 +753,18 @@
             118: { symbol: "Og", name: "Oganesson", color: 0x8e44ad }
         };
 
-        // Sinkronisasi data dinamis sisa kimia
         for (let i = 1; i <= 118; i++) {
             if (!elementDatabase[i]) {
                 elementDatabase[i] = { symbol: `Un_${i}`, name: `Elemen ke-${i}`, color: 0x7f8c8d };
             }
         }
 
-        // --- SISTEM PENYIMPANAN WORLD SAVE/LOAD ---
         let currentGamemode = "Creative"; 
         let playerHealth = 100;
         let isPlayerSleeping = false;
         let isPlayerSitting = false;
         let originalCameraY = 0;
 
-        // --- PREVENT CRASH ON COLD LAUNCH: SAFE FIREBASE DETECTION (RULE 1 & RULE 3) ---
         let dbUser = null;
         let myPlayerId = "offline_" + Math.floor(Math.random() * 1000);
         let playersRef = null;
@@ -781,7 +774,6 @@
         let firebaseOnlineActive = false;
         let appId = 'minecraft-edu-mega-26';
 
-        // Deteksi apakah konfigurasi Firebase valid
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
             try {
                 const configParsed = JSON.parse(__firebase_config);
@@ -804,7 +796,6 @@
         let worldSeed = "999";
         let numericSeed = 999;
 
-        // Prosedur Voxel Texture Prosedural Pixelated Mandiri (100% Bebas CORS!)
         const textureCache = {};
         function createPixelTexture(baseColor, topColor, isGrass = false, customCanvas = null) {
             if (customCanvas) {
@@ -822,7 +813,7 @@
             canvas.height = 16;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = "#" + baseColor.toString(16).padStart(6, '0');
+            ctx.fillStyle = "#" + (baseColor || 0x866043).toString(16).padStart(6, '0');
             ctx.fillRect(0, 0, 16, 16);
 
             for (let x = 0; x < 16; x += 2) {
@@ -851,7 +842,6 @@
             return tex;
         }
 
-        // --- SETUP SCENE RENDERING ENGINE ---
         let scene, camera, renderer, clock;
         let blocksGroup = [];
         let voxelMap = {};
@@ -868,1263 +858,671 @@
             flyMode: false
         };
 
-        // Inventaris Utama Hotbar
         let hotbarSelection = [
-            { type: 'block', id: 1 },  // Rumput
-            { type: 'block', id: 4 },  // Kasur Tidur (2x1x1)
-            { type: 'block', id: 5 },  // Kursi Duduk (Realistic)
-            { type: 'block', id: 6 },  // Air Biru (Mengalir)
-            { type: 'block', id: 7 },  // Blok Redstone
-            { type: 'block', id: 9 },  // Lampu Redstone
-            { type: 'block', id: 10 }, // Piston
-            { type: 'block', id: 11 }, // TNT
-            { type: 'inventory', id: 0 } // Tombol Buka Inventory
+            { type: 'block', id: 1 },  
+            { type: 'block', id: 4 },  
+            { type: 'block', id: 5 },  
+            { type: 'block', id: 6 },  
+            { type: 'block', id: 7 },  
+            { type: 'block', id: 9 },  
+            { type: 'block', id: 11 }
         ];
 
-        // Pixel matrix 16x16 untuk Custom Block Creator
-        let pixelMatrix16x16 = Array(16 * 16).fill('#22c55e');
+        const inputState = { forward: 0, side: 0, jump: false };
+        let touchLookId = null;
+        let lastTouchX = 0, lastTouchY = 0;
+        let raycaster, mouseCenter;
+        let targetedBlockInfo = null;
 
-        // Kontrol Mobile PE
-        let isJoystickActive = false;
-        let joystickCenter = new THREE.Vector2();
-        let moveDirection = new THREE.Vector2();
-        let rightTouchId = null;
-        let lastRightTouchPos = new THREE.Vector2();
-
-        // Penanganan Tap & Hold
-        let mainTouchId = null;
-        let touchStartPoint = new THREE.Vector2();
-        let touchStartTime = 0;
-        let touchMoved = false;
-        let longPressTimer = null;
-        let hasExecutedHold = false;
-
-        const TAP_THRESHOLD_MS = 250;
-        const HOLD_THRESHOLD_MS = 1000;
-        const MOVE_THRESHOLD_PX = 15;
-
-        let raycaster = new THREE.Raycaster();
-        let currentFocusedBlock = null;
         let highlightBox;
+        const otherPlayers = {};
+        const customBlocksDatabase = {};
 
-        let otherPlayersMesh = {};
-        let currentP = 1, currentE = 1, currentN = 0;
-
-        function setSeedValue(seedStr) {
-            worldSeed = seedStr;
-            let val = 0;
-            for (let i = 0; i < seedStr.length; i++) {
-                val += seedStr.charCodeAt(i);
-            }
-            numericSeed = val;
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.innerText = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
         }
 
-        function seededRandom(s) {
-            const x = Math.sin(s) * 10000;
-            return x - Math.floor(x);
-        }
-
-        // --- MASUK KE DUNIA DAN DAFTARKAN AUTH ---
-        document.getElementById('btn-enter-game').addEventListener('click', async () => {
-            const userIn = document.getElementById('username-input').value.trim();
-            const seedIn = document.getElementById('seed-input').value.trim();
-
-            if (!userIn) {
-                alert("Harap masukkan Nama Karakter!");
-                return;
-            }
-
-            myUsername = userIn;
-            setSeedValue(seedIn || "999");
-
-            document.getElementById('lobby-container').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
-
-            // Jika Firebase aktif, lakukan login secara asinkron
-            if (firebaseOnlineActive) {
-                try {
-                    const authInstance = firebase.auth();
-                    let cred;
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        cred = await authInstance.signInWithCustomToken(__initial_auth_token);
-                    } else {
-                        cred = await authInstance.signInAnonymously();
-                    }
-                    dbUser = cred.user;
-                    myPlayerId = dbUser.uid;
-                    showToast("Terhubung ke Server Edu-Awan!");
-                } catch (err) {
-                    console.error("Gagal masuk awan, beralih ke luring:", err);
-                    firebaseOnlineActive = false;
-                    showToast("Mode Offline (Lokal) Diaktifkan");
-                }
-            } else {
-                showToast("Mode Offline (Lokal) Diaktifkan");
+        document.getElementById('btn-enter-game').addEventListener('click', () => {
+            myUsername = document.getElementById('username-input').value.trim() || "Steve_PE";
+            worldSeed = document.getElementById('seed-input').value.trim() || "999";
+            
+            numericSeed = 0;
+            for (let i = 0; i < worldSeed.length; i++) {
+                numericSeed += worldSeed.charCodeAt(i);
             }
 
             document.getElementById('seed-display').innerText = `Seed: ${worldSeed}`;
-            initGameEngine();
-            startSyncingEngine();
+            document.getElementById('lobby-container').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+
+            initThreeJS();
+            generateTerrain();
+            buildHotbarUI();
+            buildInventoryUI();
+            initPixelEditor();
+            initFirebaseOnline();
+            animate();
         });
 
-        // --- ARSITEKTUR ENGINE GRAFIS THREE.JS ---
-        function initGameEngine() {
+        function initThreeJS() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xb1e1ff);
-            scene.fog = new THREE.FogExp2(0xb1e1ff, 0.03);
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
 
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, player.height, 0);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.copy(player.position);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            clock = new THREE.Clock();
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            sunLight.position.set(50, 100, 50);
+            scene.add(sunLight);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('game-container').appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.65);
-            scene.add(ambient);
-            const sun = new THREE.DirectionalLight(0xffffff, 0.55);
-            sun.position.set(15, 35, 15);
-            scene.add(sun);
+            raycaster = new THREE.Raycaster();
+            mouseCenter = new THREE.Vector2(0, 0);
 
-            const edgeGeom = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02, 1.02, 1.02));
-            const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
-            highlightBox = new THREE.LineSegments(edgeGeom, edgeMat);
+            const boxGeo = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+            const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
+            highlightBox = new THREE.Mesh(boxGeo, boxMat);
             highlightBox.visible = false;
             scene.add(highlightBox);
 
-            generateTerrain();
-            setupTouchControls();
-            setupHotbarUI();
-            setupChatEngine();
-            setupSurvivalControls();
-            initPixelEditorGrid();
-
-            // Jalankan sirkuit Redstone & Aliran Air secara berkala
-            setInterval(() => {
-                if (typeof scene !== 'undefined') {
-                    runWaterTick();
-                    runRedstoneTick();
-                }
-            }, 500);
-
             window.addEventListener('resize', onWindowResize);
-            clock = new THREE.Clock();
-            animate();
+            setupTouchAndControls();
         }
 
-        // Terrain Prosedural
         function generateTerrain() {
-            const size = 10;
-            const seedFactor = seededRandom(numericSeed);
-            const frequency = 0.15 + (seedFactor * 0.1);
+            const worldSize = 32;
 
-            for (let x = -size; x <= size; x++) {
-                for (let z = -size; z <= size; z++) {
-                    const hVal = Math.sin(x * frequency + numericSeed) * 1.5 + Math.cos(z * frequency - numericSeed) * 1.5;
-                    const height = Math.floor(hVal);
+            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
+                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
+                    const heightOffset = Math.floor(Math.sin((x + numericSeed) * 0.2) * 2 + Math.cos((z + numericSeed) * 0.2) * 2);
+                    const surfaceY = 0 + heightOffset;
 
-                    createVoxel(x, height, z, 'block', 1); // Grass
-                    createVoxel(x, height - 1, z, 'block', 2); // Dirt
-                    createVoxel(x, height - 2, z, 'block', 3); // Stone
+                    createBlockMesh(x, surfaceY, z, 1);
+
+                    for (let y = surfaceY - 1; y >= surfaceY - 3; y--) {
+                        createBlockMesh(x, y, z, 2);
+                    }
+                    createBlockMesh(x, surfaceY - 4, z, 3);
                 }
             }
-            player.position.set(0, 5, 0);
         }
 
-        // --- SISTEM RENDERING VOXEL ---
-        function createVoxel(x, y, z, type, id, state = {}) {
+        function getBlockData(blockId) {
+            if (customBlocksDatabase[blockId]) return customBlocksDatabase[blockId];
+            return minecraftBlocks.find(b => b.id === blockId) || minecraftBlocks[0];
+        }
+
+        function createBlockMesh(x, y, z, blockId, customCanvas = null) {
             const key = `${x},${y},${z}`;
-            if (voxelMap[key]) return;
+            if (voxelMap[key]) removeBlockMesh(x, y, z);
 
-            let mesh;
+            const bData = getBlockData(blockId);
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            let material;
 
-            if (type === 'block') {
-                const config = minecraftBlocks.find(b => b.id === id);
-                if (!config) return;
+            if (bData.type === 'grass') {
+                const sideTex = createPixelTexture(bData.sideColor || 0x866043, bData.topColor || 0x5c9e32, true);
+                const topTex = createPixelTexture(bData.topColor || 0x5c9e32, null, false);
+                const bottomTex = createPixelTexture(bData.color || 0x866043, null, false);
 
-                const behaviorType = config.type || "stone";
-
-                if (behaviorType === "chair") { // Kursi Kayu Realistis (Realistic Chair)
-                    const group = new THREE.Group();
-                    const chairMat = new THREE.MeshLambertMaterial({ color: config.color });
-                    
-                    const seatGeom = new THREE.BoxGeometry(0.8, 0.08, 0.8);
-                    const seat = new THREE.Mesh(seatGeom, chairMat);
-                    seat.position.y = 0;
-                    group.add(seat);
-                    
-                    const backGeom = new THREE.BoxGeometry(0.8, 0.6, 0.08);
-                    const back = new THREE.Mesh(backGeom, chairMat);
-                    back.position.set(0, 0.3, -0.36);
-                    group.add(back);
-                    
-                    const legGeom = new THREE.BoxGeometry(0.08, 0.45, 0.08);
-                    const legOffsets = [
-                        [-0.35, -0.225, -0.35],
-                        [0.35, -0.225, -0.35],
-                        [-0.35, -0.225, 0.35],
-                        [0.35, -0.225, 0.35]
-                    ];
-                    legOffsets.forEach(offset => {
-                        const leg = new THREE.Mesh(legGeom, chairMat);
-                        leg.position.set(offset[0], offset[1], offset[2]);
-                        group.add(leg);
-                    });
-                    
-                    mesh = group;
-
-                    const yaw = Math.round(player.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
-                    mesh.rotation.y = yaw;
-
-                } else if (behaviorType === "bed") { // Tempat Tidur Realistis (Bed 2x1x1)
-                    const group = new THREE.Group();
-                    const redTex = createPixelTexture(0xe74c3c, null, false);
-                    const whiteTex = createPixelTexture(0xffffff, null, false);
-                    const woodTex = createPixelTexture(0x5c4033, null, false);
-                    
-                    const frameGeom = new THREE.BoxGeometry(1, 0.35, 2);
-                    const frame = new THREE.Mesh(frameGeom, new THREE.MeshLambertMaterial({ map: woodTex }));
-                    frame.position.y = -0.325;
-                    group.add(frame);
-                    
-                    const matGeom = new THREE.BoxGeometry(1, 0.5, 1.5);
-                    const mattress = new THREE.Mesh(matGeom, new THREE.MeshLambertMaterial({ map: redTex }));
-                    mattress.position.set(0, 0.05, 0.25);
-                    group.add(mattress);
-                    
-                    const pillowGeom = new THREE.BoxGeometry(0.8, 0.55, 0.5);
-                    const pillow = new THREE.Mesh(pillowGeom, new THREE.MeshLambertMaterial({ map: whiteTex }));
-                    pillow.position.set(0, 0.075, -0.75);
-                    group.add(pillow);
-                    
-                    mesh = group;
-
-                    const yaw = Math.round(player.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
-                    mesh.rotation.y = yaw;
-
-                } else {
-                    const geometry = new THREE.BoxGeometry(1, 1, 1);
-                    let material;
-
-                    if (config.customCanvas) {
-                        const customTex = createPixelTexture(null, null, false, config.customCanvas);
-                        material = new THREE.MeshLambertMaterial({ map: customTex });
-                    } else if (behaviorType === "grass") { 
-                        const sideTex = createPixelTexture(config.sideColor, config.topColor, true);
-                        const topTex = createPixelTexture(config.topColor, null, false);
-                        const bottomTex = createPixelTexture(config.sideColor, null, false);
-
-                        material = [
-                            new THREE.MeshLambertMaterial({ map: sideTex }),
-                            new THREE.MeshLambertMaterial({ map: sideTex }),
-                            new THREE.MeshLambertMaterial({ map: topTex }),
-                            new THREE.MeshLambertMaterial({ map: bottomTex }),
-                            new THREE.MeshLambertMaterial({ map: sideTex }),
-                            new THREE.MeshLambertMaterial({ map: sideTex })
-                        ];
-                    } else if (behaviorType === "water") { 
-                        material = new THREE.MeshLambertMaterial({
-                            color: config.color,
-                            transparent: true,
-                            opacity: config.opacity || 0.65
-                        });
-                    } else if (behaviorType === "redstone_lamp") { 
-                        const isLit = state.powered ? true : false;
-                        const lampColor = isLit ? 0xf39c12 : 0x3e2723;
-                        material = new THREE.MeshLambertMaterial({
-                            color: lampColor,
-                            emissive: lampColor,
-                            emissiveIntensity: isLit ? 0.7 : 0.0
-                        });
-                    } else if (behaviorType === "piston") { 
-                        const pistonTex = createPixelTexture(0x7f8c8d, null, false);
-                        material = new THREE.MeshLambertMaterial({ map: pistonTex });
-                    } else {
-                        const tex = createPixelTexture(config.color, null, false);
-                        material = new THREE.MeshLambertMaterial({
-                            map: tex,
-                            transparent: config.transparent || false,
-                            opacity: config.opacity || 1.0
-                        });
-                    }
-                    mesh = new THREE.Mesh(geometry, material);
-                }
+                material = [
+                    new THREE.MeshLambertMaterial({ map: sideTex }),
+                    new THREE.MeshLambertMaterial({ map: sideTex }),
+                    new THREE.MeshLambertMaterial({ map: topTex }),
+                    new THREE.MeshLambertMaterial({ map: bottomTex }),
+                    new THREE.MeshLambertMaterial({ map: sideTex }),
+                    new THREE.MeshLambertMaterial({ map: sideTex })
+                ];
+            } else if (customCanvas) {
+                const tex = createPixelTexture(null, null, false, customCanvas);
+                material = new THREE.MeshLambertMaterial({ map: tex });
             } else {
-                const geometry = new THREE.BoxGeometry(1, 1, 1);
-                const config = elementDatabase[id];
-                const material = new THREE.MeshLambertMaterial({
-                    color: config.color,
-                    transparent: true,
-                    opacity: 0.7,
-                    emissive: config.color,
-                    emissiveIntensity: 0.2
+                const tex = createPixelTexture(bData.color, null, false);
+                material = new THREE.MeshLambertMaterial({
+                    map: tex,
+                    transparent: bData.transparent || false,
+                    opacity: bData.opacity || 1.0
                 });
-                mesh = new THREE.Mesh(geometry, material);
             }
 
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(x, y, z);
+            mesh.userData = { id: blockId, type: bData.type, key: key, isPowered: false };
+
             scene.add(mesh);
-
-            const blockConfig = minecraftBlocks.find(b => b.id === id) || {};
-            const initialFlow = blockConfig.viscosity !== undefined ? (10 - blockConfig.viscosity) : 4;
-
-            mesh.userData = { type: type, id: id, powered: state.powered || false };
-            voxelMap[key] = { 
-                mesh: mesh, 
-                type: type, 
-                id: id, 
-                powered: state.powered || false,
-                flowLevel: state.flowLevel !== undefined ? state.flowLevel : (blockConfig.type === 'water' ? initialFlow : undefined)
-            };
             blocksGroup.push(mesh);
+            voxelMap[key] = mesh;
+
+            updateRedstoneNetwork();
+            return mesh;
         }
 
-        function removeVoxel(x, y, z) {
+        function removeBlockMesh(x, y, z) {
             const key = `${x},${y},${z}`;
-            if (!voxelMap[key]) return null;
-
-            const target = voxelMap[key];
-            scene.remove(target.mesh);
-            target.mesh.geometry.dispose();
-
-            if (Array.isArray(target.mesh.material)) {
-                target.mesh.material.forEach(m => m.dispose());
-            } else {
-                target.mesh.material.dispose();
+            const mesh = voxelMap[key];
+            if (mesh) {
+                scene.remove(mesh);
+                blocksGroup = blocksGroup.filter(b => b !== mesh);
+                delete voxelMap[key];
+                updateRedstoneNetwork();
             }
-
-            blocksGroup = blocksGroup.filter(b => b !== target.mesh);
-            delete voxelMap[key];
-            return target;
         }
 
-        // --- SISTEM PEMRORESAN LOGIKA REDSTONE, TNT & PISTON ---
-        function runRedstoneTick() {
-            const powerSources = [];
-            const lampBlocks = [];
-            const pistonBlocks = [];
-            const tntBlocks = [];
-
-            for (const key in voxelMap) {
-                const voxel = voxelMap[key];
-                const pos = voxel.mesh.position;
-                const bConfig = minecraftBlocks.find(b => b.id === voxel.id);
-                const bType = bConfig ? bConfig.type : "";
-
-                if (voxel.type === 'block' && bType === 'redstone_block') {
-                    powerSources.push(pos.clone());
-                } else if (voxel.type === 'block' && bType === 'redstone_lamp') {
-                    lampBlocks.push(voxel);
-                } else if (voxel.type === 'block' && bType === 'piston') {
-                    pistonBlocks.push(voxel);
-                } else if (voxel.type === 'block' && bType === 'tnt') {
-                    tntBlocks.push(voxel);
-                }
-            }
-
-            lampBlocks.forEach(lamp => {
-                const pos = lamp.mesh.position;
-                let gotPower = false;
-                powerSources.forEach(src => {
-                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
-                });
-
-                if (gotPower !== lamp.powered) {
-                    const lPos = pos.clone();
-                    const currentId = lamp.id;
-                    removeVoxel(lPos.x, lPos.y, lPos.z);
-                    createVoxel(lPos.x, lPos.y, lPos.z, 'block', currentId, { powered: gotPower });
-                }
-            });
-
-            pistonBlocks.forEach(piston => {
-                const pos = piston.mesh.position;
-                let gotPower = false;
-                powerSources.forEach(src => {
-                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
-                });
-
-                if (gotPower && !piston.pushed) {
-                    piston.pushed = true;
-                    const pushY = pos.y + 1;
-                    const targetVoxel = voxelMap[`${pos.x},${pushY},${pos.z}`];
-                    if (targetVoxel) {
-                        const tConfig = minecraftBlocks.find(b => b.id === targetVoxel.id);
-                        if (tConfig && tConfig.type !== 'piston') {
-                            const targetPos = targetVoxel.mesh.position.clone();
-                            const removed = removeVoxel(targetPos.x, targetPos.y, targetPos.z);
-                            if (removed) {
-                                createVoxel(targetPos.x, targetPos.y + 1, targetPos.z, removed.type, removed.id);
-                                showToast("Piston mengaktifkan daya dorong!");
-                            }
+        function updateRedstoneNetwork() {
+            Object.keys(voxelMap).forEach(key => {
+                const b = voxelMap[key];
+                if (b.userData.type === 'redstone_lamp') {
+                    let powered = false;
+                    const pos = b.position;
+                    const neighbors = [
+                        `${pos.x+1},${pos.y},${pos.z}`, `${pos.x-1},${pos.y},${pos.z}`,
+                        `${pos.x},${pos.y+1},${pos.z}`, `${pos.x},${pos.y-1},${pos.z}`,
+                        `${pos.x},${pos.y},${pos.z+1}`, `${pos.x},${pos.y},${pos.z-1}`
+                    ];
+                    neighbors.forEach(nKey => {
+                        if (voxelMap[nKey] && voxelMap[nKey].userData.type === 'redstone_block') {
+                            powered = true;
                         }
+                    });
+
+                    if (powered && !b.userData.isPowered) {
+                        b.userData.isPowered = true;
+                        b.material.color.setHex(0xffff00);
+                    } else if (!powered && b.userData.isPowered) {
+                        b.userData.isPowered = false;
+                        b.material.color.setHex(0x3e2723);
                     }
-                }
-            });
-
-            tntBlocks.forEach(tnt => {
-                const pos = tnt.mesh.position;
-                let gotPower = false;
-                powerSources.forEach(src => {
-                    if (pos.distanceTo(src) <= 1.5) gotPower = true;
-                });
-
-                if (gotPower) {
-                    triggerTntExplosion(pos.x, pos.y, pos.z);
                 }
             });
         }
 
-        // --- SISTEM PEMRORESAN AKTIF ALIRAN AIR BERDASARKAN VISKOSITAS ---
-        function runWaterTick() {
-            const waterUpdates = [];
-            
-            for (const key in voxelMap) {
-                const voxel = voxelMap[key];
-                const config = minecraftBlocks.find(b => b.id === voxel.id);
+        function interactWithBlock(mesh) {
+            const bType = mesh.userData.type;
 
-                if (voxel.type === 'block' && config && config.type === 'water') { 
-                    const pos = voxel.mesh.position;
-                    const x = Math.round(pos.x);
-                    const y = Math.round(pos.y);
-                    const z = Math.round(pos.z);
-                    
-                    const viscosity = config.viscosity !== undefined ? config.viscosity : 6;
-                    const maxFlowRange = Math.max(1, 10 - viscosity); // Rumpus: Luas Maximal = 10 - viscosity
+            if (bType === 'bed') {
+                if (isPlayerSleeping) return;
+                isPlayerSleeping = true;
+                const overlay = document.getElementById('sleep-overlay');
+                overlay.style.display = 'flex';
+                setTimeout(() => { overlay.style.opacity = '1'; }, 10);
 
-                    const level = voxel.flowLevel !== undefined ? voxel.flowLevel : maxFlowRange;
-
-                    const downKey = `${x},${y-1},${z}`;
-                    if (y - 1 > -15 && !voxelMap[downKey]) {
-                        waterUpdates.push({ x: x, y: y-1, z: z, id: voxel.id, level: maxFlowRange });
-                    } else if (level > 1) {
-                        const neighbors = [
-                            { x: x + 1, y: y, z: z },
-                            { x: x - 1, y: y, z: z },
-                            { x: x, y: y, z: z + 1 },
-                            { x: x, y: y, z: z - 1 }
-                        ];
-                        neighbors.forEach(n => {
-                            const nKey = `${n.x},${n.y},${n.z}`;
-                            if (!voxelMap[nKey]) {
-                                waterUpdates.push({ x: n.x, y: n.y, z: n.z, id: voxel.id, level: level - 1 });
-                            }
-                        });
-                    }
+                setTimeout(() => {
+                    scene.background.setHex(0x87ceeb);
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        isPlayerSleeping = false;
+                        showToast("Anda bangun di pagi hari yang cerah!");
+                    }, 1500);
+                }, 3000);
+            }
+            else if (bType === 'chair') {
+                if (!isPlayerSitting) {
+                    isPlayerSitting = true;
+                    originalCameraY = player.position.y;
+                    player.position.copy(mesh.position);
+                    player.position.y += 0.6;
+                    document.getElementById('btn-unseat').style.display = 'flex';
+                    showToast("Duduk di kursi. Tekan BERDIRI untuk lepas.");
                 }
             }
+            else if (bType === 'tnt') {
+                const pos = mesh.position.clone();
+                removeBlockMesh(pos.x, pos.y, pos.z);
+                showToast("BOOM! TNT Meledak!");
 
-            waterUpdates.forEach(u => {
-                createVoxel(u.x, u.y, u.z, 'block', u.id, { flowLevel: u.level });
-            });
-        }
-
-        // Ledakan TNT Dinamit
-        function triggerTntExplosion(x, y, z) {
-            removeVoxel(x, y, z);
-            showToast("<span style='color:red;'>⚠️ TNT TERSEDIA! MELEDAK! ⚠️</span>");
-
-            const radius = 3;
-            for (let dx = -radius; dx <= radius; dx++) {
-                for (let dy = -radius; dy <= radius; dy++) {
-                    for (let dz = -radius; dz <= radius; dz++) {
-                        if (Math.sqrt(dx*dx + dy*dy + dz*dz) <= radius) {
-                            const tx = x + dx;
-                            const ty = y + dy;
-                            const tz = z + dz;
-                            removeVoxel(tx, ty, tz);
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dz = -1; dz <= 1; dz++) {
+                            removeBlockMesh(pos.x + dx, pos.y + dy, pos.z + dz);
                         }
                     }
                 }
             }
-
-            const flashGeo = new THREE.SphereGeometry(2, 8, 8);
-            const flashMat = new THREE.MeshBasicMaterial({ color: 0xff4500, transparent: true, opacity: 0.8 });
-            const flash = new THREE.Mesh(flashGeo, flashMat);
-            flash.position.set(x, y, z);
-            scene.add(flash);
-            setTimeout(() => { scene.remove(flash); }, 600);
         }
 
-        // --- MANAJEMEN MODE BERTAHAN HIDUP & KREATIF ---
-        function setupSurvivalControls() {
-            const toggleBtn = document.getElementById('btn-mode-toggle');
-            const chatToggleBtn = document.getElementById('btn-chat-toggle');
-            const healthUI = document.getElementById('health-container');
-
-            toggleBtn.addEventListener('click', () => {
-                if (currentGamemode === "Creative") {
-                    currentGamemode = "Survival";
-                    player.flyMode = false;
-                    playerHealth = 100;
-                    healthUI.style.display = "flex";
-                    toggleBtn.innerText = "MODE: SURVIVAL";
-                    document.getElementById('mode-display').innerText = "Mode: Survival";
-                    showToast("Mode Bertahan Hidup diaktifkan!");
-                } else {
-                    currentGamemode = "Creative";
-                    healthUI.style.display = "none";
-                    toggleBtn.innerText = "MODE: KREATIF";
-                    document.getElementById('mode-display').innerText = "Mode: Kreatif";
-                    showToast("Mode Kreatif diaktifkan! Anda bebas terbang.");
-                }
-            });
-
-            chatToggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const chatContainer = document.getElementById('chat-container');
-                if (chatContainer.style.display === "none") {
-                    chatContainer.style.display = "flex";
-                    chatToggleBtn.innerText = "CHAT: TAMPIL";
-                    showToast("Kotak obrolan ditampilkan");
-                } else {
-                    chatContainer.style.display = "none";
-                    chatToggleBtn.innerText = "CHAT: SEMBUNYI";
-                    showToast("Kotak obrolan disembunyikan");
-                }
-            });
-
-            document.getElementById('btn-inventory-toggle').addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleInventoryPanel();
-            });
-
-            document.getElementById('btn-save-world').addEventListener('click', () => {
-                saveWorldProgress();
-            });
-            document.getElementById('btn-load-world').addEventListener('click', () => {
-                loadWorldProgress();
-            });
-        }
-
-        // --- FITUR SAVE / LOAD WORLD ---
-        function saveWorldProgress() {
-            const saveName = `mc_save_${worldSeed}`;
-            const worldData = {
-                seed: worldSeed,
-                gamemode: currentGamemode,
-                playerPos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-                blocks: []
-            };
-
-            for (const key in voxelMap) {
-                const v = voxelMap[key];
-                worldData.blocks.push({
-                    x: v.mesh.position.x,
-                    y: v.mesh.position.y,
-                    z: v.mesh.position.z,
-                    type: v.type,
-                    id: v.id
-                });
-            }
-
-            localStorage.setItem(saveName, JSON.stringify(worldData));
-            showToast("Progres Dunia Berhasil Disimpan Secara Lokal!");
-
-            if (firebaseOnlineActive && dbUser) {
-                db.collection('artifacts').doc(appId).collection('public').doc('data').collection('saved_worlds').doc(worldSeed).set({
-                    savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    blocksCount: worldData.blocks.length,
-                    author: myUsername
-                }).catch(e => console.log(e));
+        function standUpFromChair() {
+            if (isPlayerSitting) {
+                isPlayerSitting = false;
+                player.position.y += 1.0;
+                document.getElementById('btn-unseat').style.display = 'none';
+                showToast("Berdiri dari kursi.");
             }
         }
+        document.getElementById('btn-unseat').addEventListener('click', standUpFromChair);
 
-        function loadWorldProgress() {
-            const saveName = `mc_save_${worldSeed}`;
-            const raw = localStorage.getItem(saveName);
+        function setupTouchAndControls() {
+            const joystickContainer = document.getElementById('joystick-container');
+            const joystickKnob = document.getElementById('joystick-knob');
+            let joyTouchId = null;
+            let joyCenter = { x: 0, y: 0 };
 
-            if (!raw) {
-                showToast("<span style='color:red;'>Gagal memuat! Simpanan dunia ini tidak ditemukan.</span>");
-                return;
-            }
-
-            const data = JSON.parse(raw);
-            
-            const keys = Object.keys(voxelMap);
-            keys.forEach(k => {
-                const pos = voxelMap[k].mesh.position;
-                removeVoxel(pos.x, pos.y, pos.z);
-            });
-
-            data.blocks.forEach(b => {
-                createVoxel(b.x, b.y, b.z, b.type, b.id);
-            });
-
-            camera.position.set(data.playerPos.x, data.playerPos.y, data.playerPos.z);
-            showToast("Dunia Berhasil Dimuat dari Memori!");
-        }
-
-        // --- KONTROL SENTUH HP PE ---
-        function setupTouchControls() {
-            const container = document.getElementById('joystick-container');
-            const knob = document.getElementById('joystick-knob');
-
-            container.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                isJoystickActive = true;
-                const rect = container.getBoundingClientRect();
-                joystickCenter.set(rect.left + rect.width / 2, rect.top + rect.height / 2);
-            }, { passive: true });
-
-            container.addEventListener('touchmove', (e) => {
-                e.stopPropagation();
-                if (!isJoystickActive) return;
-                const touch = e.targetTouches[0];
-                let dx = touch.clientX - joystickCenter.x;
-                let dy = touch.clientY - joystickCenter.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-
-                const maxDist = 35;
-                if (dist > maxDist) {
-                    dx = (dx / dist) * maxDist;
-                    dy = (dy / dist) * maxDist;
-                }
-
-                knob.style.transform = `translate(${dx}px, ${dy}px)`;
-                moveDirection.set(dx / maxDist, -dy / maxDist);
-            }, { passive: true });
-
-            container.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-                isJoystickActive = false;
-                knob.style.transform = 'translate(0px, 0px)';
-                moveDirection.set(0, 0);
-            }, { passive: true });
-
-            window.addEventListener('touchstart', (e) => {
-                if (e.target.closest('#hotbar-container') || 
-                    e.target.closest('#lobby-container') || 
-                    e.target.closest('#edu-panel') || 
-                    e.target.closest('#inventory-panel') || 
-                    e.target.closest('#chat-container') || 
-                    e.target.closest('.btn-action') || 
-                    e.target.closest('#hud-controls') || 
-                    e.target.closest('#joystick-container')) {
-                    return;
-                }
-
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const t = e.changedTouches[i];
-                    
-                    if (mainTouchId === null) {
-                        mainTouchId = t.identifier;
-                        touchStartPoint.set(t.clientX, t.clientY);
-                        touchStartTime = Date.now();
-                        touchMoved = false;
-                        hasExecutedHold = false;
-
-                        longPressTimer = setTimeout(() => {
-                            if (!touchMoved && mainTouchId !== null) {
-                                breakVoxelAction();
-                                hasExecutedHold = true;
-                            }
-                        }, HOLD_THRESHOLD_MS);
-                    }
-                    
-                    if (t.clientX > window.innerWidth / 2 && rightTouchId === null) {
-                        rightTouchId = t.identifier;
-                        lastRightTouchPos.set(t.clientX, t.clientY);
-                    }
-                }
-            }, { passive: true });
+            joystickContainer.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                joyTouchId = touch.identifier;
+                const rect = joystickContainer.getBoundingClientRect();
+                joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }, { passive: false });
 
             window.addEventListener('touchmove', (e) => {
-                for (let i = 0; i < e.touches.length; i++) {
-                    const t = e.touches[i];
-                    
-                    if (t.identifier === mainTouchId) {
-                        const dist = touchStartPoint.distanceTo(new THREE.Vector2(t.clientX, t.clientY));
-                        if (dist > MOVE_THRESHOLD_PX) {
-                            touchMoved = true;
-                            if (longPressTimer) {
-                                clearTimeout(longPressTimer);
-                                longPressTimer = null;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === joyTouchId) {
+                        const dx = touch.clientX - joyCenter.x;
+                        const dy = touch.clientY - joyCenter.y;
+                        const dist = Math.min(Math.hypot(dx, dy), 40);
+                        const angle = Math.atan2(dy, dx);
+
+                        const knobX = Math.cos(angle) * dist;
+                        const knobY = Math.sin(angle) * dist;
+                        joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+                        inputState.forward = -Math.sin(angle) * (dist / 40);
+                        inputState.side = Math.cos(angle) * (dist / 40);
+                    } else if (touch.identifier === touchLookId) {
+                        const movementX = touch.clientX - lastTouchX;
+                        const movementY = touch.clientY - lastTouchY;
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
+
+                        player.rotation.x -= movementY * 0.005;
+                        player.rotation.y -= movementX * 0.005;
+                        player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
+                    }
+                }
+            }, { passive: false });
+
+            const resetJoystick = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joyTouchId) {
+                        joyTouchId = null;
+                        joystickKnob.style.transform = `translate(0px, 0px)`;
+                        inputState.forward = 0;
+                        inputState.side = 0;
+                    } else if (e.changedTouches[i].identifier === touchLookId) {
+                        touchLookId = null;
+                    }
+                }
+            };
+
+            window.addEventListener('touchend', resetJoystick);
+            window.addEventListener('touchcancel', resetJoystick);
+
+            window.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.clientX > window.innerWidth / 2 && touchLookId === null) {
+                        touchLookId = touch.identifier;
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
+                    }
+                }
+            });
+
+            let touchTimer = null;
+            let touchStartPos = { x: 0, y: 0 };
+
+            window.addEventListener('touchstart', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#hotbar-container') || e.target.closest('#joystick-container')) return;
+
+                const touch = e.touches[0];
+                touchStartPos = { x: touch.clientX, y: touch.clientY };
+
+                touchTimer = setTimeout(() => {
+                    if (targetedBlockInfo) {
+                        const p = targetedBlockInfo.mesh.position;
+                        removeBlockMesh(p.x, p.y, p.z);
+                        showToast("Blok Dihancurkan!");
+                    }
+                }, 500);
+            });
+
+            window.addEventListener('touchend', (e) => {
+                if (touchTimer) {
+                    clearTimeout(touchTimer);
+                    const touch = e.changedTouches[0];
+                    const dist = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
+
+                    if (dist < 10 && targetedBlockInfo) {
+                        if (e.target.tagName === 'BUTTON' || e.target.closest('#hotbar-container')) return;
+
+                        const mesh = targetedBlockInfo.mesh;
+                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
+                            interactWithBlock(mesh);
+                        } else {
+                            const normal = targetedBlockInfo.face.normal;
+                            const newX = mesh.position.x + normal.x;
+                            const newY = mesh.position.y + normal.y;
+                            const newZ = mesh.position.z + normal.z;
+
+                            if (selectedItem.type === 'block') {
+                                createBlockMesh(newX, newY, newZ, selectedItem.id);
                             }
                         }
                     }
-
-                    if (t.identifier === rightTouchId) {
-                        let dx = t.clientX - lastRightTouchPos.x;
-                        let dy = t.clientY - lastRightTouchPos.y;
-
-                        player.rotation.y -= dx * 0.005;
-                        player.rotation.x -= dy * 0.005;
-                        player.rotation.x = Math.max(-Math.PI/2.1, Math.min(Math.PI/2.1, player.rotation.x));
-
-                        lastRightTouchPos.set(t.clientX, t.clientY);
-                    }
                 }
-            }, { passive: true });
+            });
 
-            window.addEventListener('touchend', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const t = e.changedTouches[i];
-
-                    if (t.identifier === mainTouchId) {
-                        if (longPressTimer) {
-                            clearTimeout(longPressTimer);
-                            longPressTimer = null;
-                        }
-
-                        const duration = Date.now() - touchStartTime;
-
-                        if (!touchMoved && !hasExecutedHold && duration < TAP_THRESHOLD_MS) {
-                            handleInteractionOrPlace();
-                        }
-
-                        mainTouchId = null;
-                    }
-
-                    if (t.identifier === rightTouchId) {
-                        rightTouchId = null;
-                    }
-                }
-            }, { passive: true });
-
-            document.getElementById('btn-jump').addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (currentGamemode === "Creative") {
-                    player.velocity.y = 0.12;
-                } else if (player.onGround) {
+            document.getElementById('btn-jump').addEventListener('click', () => {
+                if (player.onGround && !isPlayerSitting) {
                     player.velocity.y = 0.15;
                     player.onGround = false;
                 }
             });
-
-            document.getElementById('btn-unseat').addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                standUpFromChair();
-            });
-
-            document.getElementById('btn-edu').addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                toggleEduPanel();
-            });
         }
 
-        // --- PENANGANAN SELEKSI INTERAKSI DUNIA ---
-        function handleInteractionOrPlace() {
-            if (currentFocusedBlock) {
-                const info = currentFocusedBlock.userData;
-                const pos = currentFocusedBlock.position;
-                const bConfig = minecraftBlocks.find(b => b.id === info.id);
-                const bType = bConfig ? bConfig.type : "";
+        let currentPixelColor = "#22c55e";
+        let pixelCanvasContext = null;
 
-                if (info.type === 'block' && bType === 'bed') {
-                    triggerSleepTransition();
-                    return;
-                } else if (info.type === 'block' && bType === 'chair') {
-                    triggerSitTransition(pos.clone());
-                    return;
-                } else if (info.type === 'block' && bType === 'tnt') {
-                    triggerTntExplosion(pos.x, pos.y, pos.z);
-                    return;
-                }
-            }
-            placeVoxelAction();
-        }
-
-        // Transisi Tidur
-        function triggerSleepTransition() {
-            if (isPlayerSleeping) return;
-            isPlayerSleeping = true;
-            
-            const overlay = document.getElementById('sleep-overlay');
-            overlay.style.display = "flex";
-            setTimeout(() => { overlay.style.opacity = 1; }, 50);
-
-            showToast("Anda tidur di kasur merah yang empuk...");
-
-            setTimeout(() => {
-                scene.background = new THREE.Color(0xb1e1ff);
-                scene.fog.color.setHex(0xb1e1ff);
-                showToast("Pagi tiba! Energi sains Anda pulih!");
-                playerHealth = 100;
-                
-                overlay.style.opacity = 0;
-                setTimeout(() => { 
-                    overlay.style.display = "none"; 
-                    isPlayerSleeping = false;
-                }, 1500);
-            }, 3000);
-        }
-
-        // Transisi Duduk
-        function triggerSitTransition(chairPos) {
-            if (isPlayerSitting) return;
-            isPlayerSitting = true;
-
-            originalCameraY = camera.position.y;
-            camera.position.set(chairPos.x, chairPos.y + 0.45, chairPos.z);
-            
-            moveDirection.set(0, 0);
-            document.getElementById('btn-unseat').style.display = "flex";
-            showToast("Duduk di kursi kayu.");
-        }
-
-        function standUpFromChair() {
-            if (!isPlayerSitting) return;
-            isPlayerSitting = false;
-            document.getElementById('btn-unseat').style.display = "none";
-            
-            camera.position.y = originalCameraY || 2.5;
-            showToast("Kembali berdiri.");
-        }
-
-        // Penempatan Blok
-        function placeVoxelAction() {
-            if (selectedItem.type === 'inventory') {
-                toggleInventoryPanel();
-                return;
-            }
-
-            let bx, by, bz;
-            if (currentFocusedBlock) {
-                const intersect = raycaster.intersectObjects(blocksGroup)[0];
-                if (!intersect) return;
-                const normal = intersect.face.normal.clone().transformDirection(currentFocusedBlock.matrixWorld);
-                const pos = currentFocusedBlock.position;
-                bx = Math.round(pos.x + normal.x);
-                by = Math.round(pos.y + normal.y);
-                bz = Math.round(pos.z + normal.z);
-            } else {
-                const front = new THREE.Vector3(0, 0, -2.5).applyQuaternion(camera.quaternion).add(camera.position);
-                bx = Math.round(front.x);
-                by = Math.round(front.y);
-                bz = Math.round(front.z);
-            }
-
-            const pX = Math.round(camera.position.x);
-            const pZ = Math.round(camera.position.z);
-            const pY = Math.round(camera.position.y);
-            if (bx === pX && bz === pZ && (by === pY || by === pY - 1)) return;
-
-            createVoxel(bx, by, bz, selectedItem.type, selectedItem.id);
-            runRedstoneTick();
-            
-            if (firebaseOnlineActive && dbUser) {
-                blocksRef.doc(`${bx}_${by}_${bz}`).set({
-                    seed: worldSeed,
-                    type: selectedItem.type,
-                    elementId: selectedItem.id,
-                    by: myUsername
-                }).catch(e => console.log(e));
-            }
-        }
-
-        function breakVoxelAction() {
-            if (!currentFocusedBlock) return;
-            const pos = currentFocusedBlock.position;
-            const res = removeVoxel(pos.x, pos.y, pos.z);
-
-            if (res) {
-                showToast("Blok hancur!");
-                runRedstoneTick();
-                if (firebaseOnlineActive && dbUser) {
-                    blocksRef.doc(`${pos.x}_${pos.y}_${pos.z}`).delete().catch(e => console.log(e));
-                }
-            }
-        }
-
-        // --- SISTEM CHAT ---
-        function setupChatEngine() {
-            const chatInput = document.getElementById('chat-input');
-            const chatSend = document.getElementById('chat-send');
-
-            chatSend.addEventListener('click', async () => {
-                const msg = chatInput.value.trim();
-                if (!msg) return;
-
-                if (firebaseOnlineActive && dbUser) {
-                    await chatsRef.add({
-                        sender: myUsername,
-                        seed: worldSeed,
-                        message: msg,
-                        isSystem: false,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(e => console.log(e));
-                } else {
-                    // Chat local offline fallback
-                    appendLocalChatMessage(myUsername, msg);
-                }
-                chatInput.value = "";
-            });
-
-            if (firebaseOnlineActive) {
-                chatsRef.onSnapshot((snapshot) => {
-                    const box = document.getElementById('chat-messages');
-                    box.innerHTML = "";
-                    let msgs = [];
-                    snapshot.forEach((doc) => {
-                        const d = doc.data();
-                        if (d.seed === worldSeed) msgs.push(d);
-                    });
-
-                    msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                    msgs.slice(-15).forEach((m) => {
-                        appendLocalChatMessage(m.sender, m.message, m.isSystem);
-                    });
-                }, (err) => console.log(err));
-            } else {
-                appendLocalChatMessage("System", "Berjalan dalam Mode Offline (Lokal). Chat box hanya berfungsi luring.", true);
-            }
-        }
-
-        function appendLocalChatMessage(sender, message, isSystem = false) {
-            const box = document.getElementById('chat-messages');
-            const item = document.createElement('div');
-            item.className = 'chat-msg';
-            if (isSystem) {
-                item.innerHTML = `<span class="chat-system">[System] ${message}</span>`;
-            } else {
-                item.innerHTML = `<span class="chat-user">${sender}:</span> ${message}`;
-            }
-            box.appendChild(item);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        async function sendSystemChat(text) {
-            if (firebaseOnlineActive && dbUser) {
-                await chatsRef.add({
-                    sender: "System",
-                    seed: worldSeed,
-                    message: text,
-                    isSystem: true,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(e => console.log(e));
-            } else {
-                appendLocalChatMessage("System", text, true);
-            }
-        }
-
-        // --- HOTBAR INTERFACE ---
-        function setupHotbarUI() {
-            const container = document.getElementById('hotbar-container');
-            container.innerHTML = "";
-
-            hotbarSelection.forEach((item, index) => {
-                const slot = document.createElement('div');
-                slot.className = `hotbar-slot ${index === activeHotbarIndex ? 'active' : ''}`;
-                
-                if (item.type === 'block') {
-                    const b = minecraftBlocks.find(bl => bl.id === item.id);
-                    const colorHex = b.color ? b.color.toString(16).padStart(6,'0') : '5c9e32';
-                    slot.innerHTML = `
-                        <div class="slot-color-box" style="background-color:#${colorHex};"></div>
-                        <span class="slot-name">${b.name}</span>
-                    `;
-                } else if (item.type === 'inventory') {
-                    slot.innerHTML = `
-                        <span class="slot-symbol" style="color:#2ecc71;">📦</span>
-                        <span class="slot-name">INVENTORY</span>
-                    `;
-                } else {
-                    const el = elementDatabase[item.id];
-                    slot.innerHTML = `
-                        <span class="slot-symbol" style="color:#${el.color.toString(16).padStart(6,'0')};">${el.symbol}</span>
-                        <span class="slot-name">${el.name}</span>
-                    `;
-                }
-
-                slot.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    changeSelectedSlot(index);
-                });
-                container.appendChild(slot);
-            });
-            selectedItem = hotbarSelection[activeHotbarIndex];
-        }
-
-        function changeSelectedSlot(index) {
-            activeHotbarIndex = index;
-            setupHotbarUI();
-            if (selectedItem.type === 'inventory') {
-                toggleInventoryPanel();
-            }
-        }
-
-        // --- SISTEM PANEL INVENTARIS & CUSTOM BLOCK CREATOR 16x16 ---
-        function toggleInventoryPanel() {
-            const panel = document.getElementById('inventory-panel');
-            const isVisible = panel.style.display === 'block';
-            panel.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                renderInventoryItemsList();
-            }
-        }
-
-        function renderInventoryItemsList() {
-            const grid = document.getElementById('inv-items-list');
-            grid.innerHTML = "";
-
-            minecraftBlocks.forEach((block) => {
-                const itemCard = document.createElement('div');
-                itemCard.className = 'inv-item-card';
-                const colorHex = block.color ? block.color.toString(16).padStart(6,'0') : '5c9e32';
-                
-                itemCard.innerHTML = `
-                    <div class="inv-item-preview" style="background-color:#${colorHex};"></div>
-                    <div class="inv-item-name">${block.name}</div>
-                `;
-
-                itemCard.addEventListener('click', () => {
-                    hotbarSelection[activeHotbarIndex] = { type: 'block', id: block.id };
-                    setupHotbarUI();
-                    showToast(`Disimpan ke Hotbar: <strong>${block.name}</strong>`);
-                    toggleInventoryPanel();
-                });
-
-                grid.appendChild(itemCard);
-            });
-        }
-
-        function toggleCustomBlockCreator() {
-            const creator = document.getElementById('custom-block-creator');
-            creator.style.display = (creator.style.display === 'block') ? 'none' : 'block';
-        }
-
-        function initPixelEditorGrid() {
+        function initPixelEditor() {
             const grid = document.getElementById('pixel-grid');
-            grid.innerHTML = "";
-            pixelMatrix16x16.fill('#22c55e');
+            grid.innerHTML = '';
+
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = 16;
+            offCanvas.height = 16;
+            pixelCanvasContext = offCanvas.getContext('2d');
+            pixelCanvasContext.fillStyle = currentPixelColor;
+            pixelCanvasContext.fillRect(0, 0, 16, 16);
 
             for (let i = 0; i < 256; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'pixel-cell';
-                cell.style.backgroundColor = pixelMatrix16x16[i];
-                
-                const drawColor = () => {
-                    const selectedColor = document.getElementById('custom-color-picker').value;
-                    cell.style.backgroundColor = selectedColor;
-                    pixelMatrix16x16[i] = selectedColor;
-                };
+                cell.style.backgroundColor = currentPixelColor;
 
-                cell.addEventListener('mousedown', drawColor);
-                cell.addEventListener('mouseenter', (e) => {
-                    if (e.buttons === 1) drawColor();
+                cell.addEventListener('pointerdown', () => {
+                    currentPixelColor = document.getElementById('custom-color-picker').value;
+                    cell.style.backgroundColor = currentPixelColor;
+
+                    const x = i % 16;
+                    const y = Math.floor(i / 16);
+                    pixelCanvasContext.fillStyle = currentPixelColor;
+                    pixelCanvasContext.fillRect(x, y, 1, 1);
                 });
-                cell.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    drawColor();
-                }, { passive: false });
-
                 grid.appendChild(cell);
             }
         }
 
+        function toggleCustomBlockCreator() {
+            const creator = document.getElementById('custom-block-creator');
+            creator.style.display = creator.style.display === 'block' ? 'none' : 'block';
+        }
+
         function onBehaviorTypeChange() {
-            const behavior = document.getElementById('custom-behavior-select').value;
-            const visContainer = document.getElementById('viscosity-container');
-            if (behavior === 'water') {
-                visContainer.style.display = 'block';
-                updateViscosityLabel();
-            } else {
-                visContainer.style.display = 'none';
-            }
+            const val = document.getElementById('custom-behavior-select').value;
+            const vis = document.getElementById('viscosity-container');
+            vis.style.display = val === 'water' ? 'block' : 'none';
         }
 
         function updateViscosityLabel() {
-            const viscosity = parseInt(document.getElementById('custom-viscosity').value);
-            const maxFlow = Math.max(1, 10 - viscosity);
-            document.getElementById('viscosity-info').innerText = `Aliran Maksimal: ${maxFlow} Blok (Rumus: 10 - ${viscosity})`;
+            const val = document.getElementById('custom-viscosity').value;
+            document.getElementById('viscosity-info').innerText = `Aliran Maksimal: ${val} Blok`;
         }
 
         function saveCustomBlock() {
-            const name = document.getElementById('custom-block-name').value.trim() || "Blok Kustom";
+            const name = document.getElementById('custom-block-name').value.trim() || "Custom Voxel";
             const behavior = document.getElementById('custom-behavior-select').value;
-            const viscosity = parseInt(document.getElementById('custom-viscosity').value);
+            const vis = parseInt(document.getElementById('custom-viscosity').value);
+            const newId = 900 + Object.keys(customBlocksDatabase).length;
 
-            // Buat Canvas 16x16 untuk Tekstur Custom
-            const canvas = document.createElement('canvas');
-            canvas.width = 16;
-            canvas.height = 16;
-            const ctx = canvas.getContext('2d');
+            const canvasCopy = document.createElement('canvas');
+            canvasCopy.width = 16;
+            canvasCopy.height = 16;
+            const ctx = canvasCopy.getContext('2d');
+            ctx.drawImage(pixelCanvasContext.canvas, 0, 0);
 
-            for (let y = 0; y < 16; y++) {
-                for (let x = 0; x < 16; x++) {
-                    ctx.fillStyle = pixelMatrix16x16[y * 16 + x];
-                    ctx.fillRect(x, y, 1, 1);
-                }
-            }
-
-            const newBlockId = minecraftBlocks.length + 100;
-            const newBlockConfig = {
-                id: newBlockId,
+            customBlocksDatabase[newId] = {
+                id: newId,
                 name: name,
                 type: behavior,
-                color: parseInt(pixelMatrix16x16[0].replace('#', '0x')),
-                customCanvas: canvas,
-                viscosity: behavior === 'water' ? viscosity : undefined
+                color: 0xffffff,
+                canvas: canvasCopy,
+                viscosity: vis
             };
 
-            minecraftBlocks.push(newBlockConfig);
+            hotbarSelection[activeHotbarIndex] = { type: 'block', id: newId };
+            selectedItem = hotbarSelection[activeHotbarIndex];
 
-            hotbarSelection[activeHotbarIndex] = { type: 'block', id: newBlockId };
-            setupHotbarUI();
+            buildHotbarUI();
+            buildInventoryUI();
+            toggleCustomBlockCreator();
             toggleInventoryPanel();
-            showToast(`Blok Kustom <strong>${name}</strong> berhasil dibuat!`);
+            showToast(`Blok "${name}" Disimpan ke Hotbar!`);
         }
 
-        // --- LAB KIMIA ---
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+        document.getElementById('btn-inventory-toggle').addEventListener('click', toggleInventoryPanel);
+
+        function buildHotbarUI() {
+            const container = document.getElementById('hotbar-container');
+            container.innerHTML = '';
+
+            hotbarSelection.forEach((slot, idx) => {
+                const bData = getBlockData(slot.id);
+                const slotDiv = document.createElement('div');
+                slotDiv.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
+
+                const box = document.createElement('div');
+                box.className = 'slot-color-box';
+                box.style.backgroundColor = '#' + (bData.color || 0x5c9e32).toString(16).padStart(6, '0');
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'slot-name';
+                nameDiv.innerText = bData.name.substring(0, 8);
+
+                slotDiv.appendChild(box);
+                slotDiv.appendChild(nameDiv);
+
+                slotDiv.addEventListener('click', () => {
+                    activeHotbarIndex = idx;
+                    selectedItem = slot;
+                    buildHotbarUI();
+                });
+
+                container.appendChild(slotDiv);
+            });
+        }
+
+        function buildInventoryUI() {
+            const container = document.getElementById('inv-items-list');
+            container.innerHTML = '';
+
+            const allBlocks = [...minecraftBlocks, ...Object.values(customBlocksDatabase)];
+            allBlocks.forEach(b => {
+                const card = document.createElement('div');
+                card.className = 'inv-item-card';
+
+                const prev = document.createElement('div');
+                prev.className = 'inv-item-preview';
+                prev.style.backgroundColor = '#' + (b.color || 0x2ecc71).toString(16).padStart(6, '0');
+
+                const name = document.createElement('div');
+                name.className = 'inv-item-name';
+                name.innerText = b.name;
+
+                card.appendChild(prev);
+                card.appendChild(name);
+
+                card.addEventListener('click', () => {
+                    hotbarSelection[activeHotbarIndex] = { type: 'block', id: b.id };
+                    selectedItem = hotbarSelection[activeHotbarIndex];
+                    buildHotbarUI();
+                    showToast(`Slot ${activeHotbarIndex + 1} Diubah: ${b.name}`);
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        let currentP = 1, currentE = 1, currentN = 0;
+
         function toggleEduPanel() {
             const panel = document.getElementById('edu-panel');
-            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
-            if (panel.style.display === 'block') {
-                currentP = selectedItem.type === 'element' ? selectedItem.id : 1;
-                currentE = currentP;
-                currentN = Math.round(currentP * 1.25);
-                updateConstructorUI();
-            }
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
+        document.getElementById('btn-edu').addEventListener('click', toggleEduPanel);
 
         function adjustParticle(type, val) {
             if (type === 'p') currentP = Math.max(1, Math.min(118, currentP + val));
             if (type === 'e') currentE = Math.max(1, Math.min(118, currentE + val));
-            if (type === 'n') currentN = Math.max(0, Math.min(180, currentN + val));
-            updateConstructorUI();
-        }
+            if (type === 'n') currentN = Math.max(0, Math.min(150, currentN + val));
 
-        function updateConstructorUI() {
             document.getElementById('proton-val').innerText = currentP;
             document.getElementById('electron-val').innerText = currentE;
             document.getElementById('neutron-val').innerText = currentN;
 
-            const sym = document.getElementById('element-big-symbol');
-            const name = document.getElementById('element-big-name');
-
-            if (currentP === currentE) {
-                const el = elementDatabase[currentP];
-                sym.innerText = el.symbol;
-                sym.style.color = '#' + el.color.toString(16).padStart(6, '0');
-                name.innerText = el.name;
-            } else {
-                sym.innerText = "ION";
-                sym.style.color = "#e74c3c";
-                name.innerText = "Tidak Stabil!";
-            }
+            const elem = elementDatabase[currentP] || { symbol: `Un_${currentP}`, name: `Elemen ke-${currentP}` };
+            document.getElementById('element-big-symbol').innerText = elem.symbol;
+            document.getElementById('element-big-name').innerText = elem.name;
         }
 
         function claimCreatedElement() {
-            if (currentP !== currentE) {
-                showToast("<span style='color:red;'>Unsur harus netral (Proton = Elektron)!</span>");
+            const elem = elementDatabase[currentP] || { symbol: `Un_${currentP}`, name: `Elemen ke-${currentP}` };
+            showToast(`Sintesis Berhasil: ${elem.name} (${elem.symbol})!`);
+            toggleEduPanel();
+        }
+
+        function initFirebaseOnline() {
+            if (!firebaseOnlineActive || !playersRef) {
+                console.log("Menjalankan sesi Singleplayer / Offline.");
                 return;
             }
-            hotbarSelection[activeHotbarIndex] = { type: 'element', id: currentP };
-            setupHotbarUI();
-            toggleEduPanel();
-            showToast(`Unsur Berhasil Disintesis: <strong>${elementDatabase[currentP].name}</strong>!`);
-        }
-
-        // --- CLOUD SINKRONISASI ---
-        function startSyncingEngine() {
-            if (!firebaseOnlineActive) return;
-
-            setInterval(() => {
-                if (isPlayerSitting) return;
-                playersRef.doc(myPlayerId).set({
-                    username: myUsername,
-                    seed: worldSeed,
-                    x: camera.position.x,
-                    y: camera.position.y - player.height,
-                    z: camera.position.z,
-                    ry: player.rotation.y,
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true }).catch(e => console.log(e));
-            }, 300);
 
             playersRef.onSnapshot((snapshot) => {
-                let otherCount = 0;
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (doc.id === myPlayerId || data.seed !== worldSeed) return;
-                    otherCount++;
-                    updateOtherPlayerAvatar(doc.id, data);
-                });
-                document.getElementById('player-count').innerText = `Player Lain: ${otherCount}`;
-            }, (err) => console.log(err));
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const pId = change.doc.id;
+                    if (pId === myPlayerId) return;
 
-            sendSystemChat(`${myUsername} bergabung dalam petualangan sains!`);
-        }
-
-        function updateOtherPlayerAvatar(pId, data) {
-            if (!otherPlayersMesh[pId]) {
-                const group = new THREE.Group();
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshLambertMaterial({ color: 0xdca26c }));
-                head.position.y = 0.5;
-                const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.3), new THREE.MeshLambertMaterial({ color: 0x2ecc71 }));
-                body.position.y = -0.3;
-                group.add(head);
-                group.add(body);
-                scene.add(group);
-                otherPlayersMesh[pId] = group;
-            }
-            const avatar = otherPlayersMesh[pId];
-            avatar.position.set(data.x, data.y + player.height / 2, data.z);
-            avatar.rotation.y = data.ry;
-        }
-
-        // --- BIDIKAN / RAYCASTING ---
-        function updateRaycasting() {
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(blocksGroup, true);
-
-            if (intersects.length > 0 && intersects[0].distance < 6.0) {
-                const focused = intersects[0].object;
-                
-                let rootObj = focused;
-                while (rootObj.parent && rootObj.parent !== scene) {
-                    rootObj = rootObj.parent;
-                }
-
-                if (blocksGroup.includes(rootObj)) {
-                    if (currentFocusedBlock !== rootObj) {
-                        currentFocusedBlock = rootObj;
-                        highlightBox.position.copy(currentFocusedBlock.position);
-                        
-                        highlightBox.scale.set(1, 1, 1);
-                        highlightBox.rotation.set(0, 0, 0);
-
-                        const data = currentFocusedBlock.userData;
-                        const blockCfg = minecraftBlocks.find(b => b.id === data.id);
-                        if (data && data.type === 'block' && blockCfg) {
-                            if (blockCfg.type === 'bed') { 
-                                highlightBox.scale.set(1, 1, 2);
-                                highlightBox.rotation.copy(currentFocusedBlock.rotation);
-                            } else if (blockCfg.type === 'chair') { 
-                                highlightBox.scale.set(1, 1.2, 1);
-                            }
+                    if (change.type === "added" || change.type === "modified") {
+                        if (!otherPlayers[pId]) {
+                            const pGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+                            const pMat = new THREE.MeshLambertMaterial({ color: 0x3498db });
+                            const pMesh = new THREE.Mesh(pGeo, pMat);
+                            scene.add(pMesh);
+                            otherPlayers[pId] = pMesh;
                         }
-                        
-                        highlightBox.visible = true;
-
-                        const hudText = document.getElementById('block-focused');
-                        if (data.type === 'block') {
-                            hudText.innerHTML = `Membidik: <strong>${blockCfg ? blockCfg.name : 'Blok'}</strong>`;
-                        } else {
-                            hudText.innerHTML = `Membidik: <strong style="color:#e67e22;">Unsur ${elementDatabase[data.id].name}</strong>`;
+                        otherPlayers[pId].position.set(data.x, data.y, data.z);
+                    } else if (change.type === "removed") {
+                        if (otherPlayers[pId]) {
+                            scene.remove(otherPlayers[pId]);
+                            delete otherPlayers[pId];
                         }
                     }
+                });
+            });
+
+            setInterval(() => {
+                if (firebaseOnlineActive && playersRef) {
+                    playersRef.doc(myPlayerId).set({
+                        username: myUsername,
+                        x: player.position.x,
+                        y: player.position.y,
+                        z: player.position.z,
+                        lastUpdate: Date.now()
+                    }, { merge: true });
                 }
-            } else {
-                currentFocusedBlock = null;
-                highlightBox.visible = false;
-                document.getElementById('block-focused').innerText = "Membidik: Udara";
-            }
+            }, 200);
         }
 
-        // --- UTILITIES ---
-        let toastTimeout;
-        function showToast(msg) {
-            const toast = document.getElementById('toast-notification');
-            toast.innerHTML = msg;
-            toast.style.display = 'block';
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => toast.style.display = 'none', 2500);
+        document.getElementById('btn-mode-toggle').addEventListener('click', () => {
+            const btn = document.getElementById('btn-mode-toggle');
+            const modeDisp = document.getElementById('mode-display');
+            const healthContainer = document.getElementById('health-container');
+
+            if (currentGamemode === "Creative") {
+                currentGamemode = "Survival";
+                btn.innerText = "MODE: SURVIVAL";
+                modeDisp.innerText = "Mode: Survival";
+                healthContainer.style.display = "flex";
+                showToast("Beralih ke Mode Survival!");
+            } else {
+                currentGamemode = "Creative";
+                btn.innerText = "MODE: KREATIF";
+                modeDisp.innerText = "Mode: Kreatif";
+                healthContainer.style.display = "none";
+                showToast("Beralih ke Mode Kreatif!");
+            }
+        });
+
+        document.getElementById('btn-save-world').addEventListener('click', () => {
+            const saveData = [];
+            Object.keys(voxelMap).forEach(key => {
+                const b = voxelMap[key];
+                saveData.push({
+                    x: b.position.x,
+                    y: b.position.y,
+                    z: b.position.z,
+                    id: b.userData.id
+                });
+            });
+            localStorage.setItem('minecraft_pe_save', JSON.stringify(saveData));
+            showToast("Dunia Berhasil Disimpan di Penyimpanan Lokal!");
+        });
+
+        document.getElementById('btn-load-world').addEventListener('click', () => {
+            const dataStr = localStorage.getItem('minecraft_pe_save');
+            if (!dataStr) {
+                showToast("Tidak ada data simpanan ditemukan!");
+                return;
+            }
+            const saveData = JSON.parse(dataStr);
+
+            Object.keys(voxelMap).forEach(key => {
+                const b = voxelMap[key];
+                scene.remove(b);
+            });
+            blocksGroup = [];
+            voxelMap = {};
+
+            saveData.forEach(item => {
+                createBlockMesh(item.x, item.y, item.z, item.id);
+            });
+            showToast("Dunia Berhasil Dimuat Kembali!");
+        });
+
+        document.getElementById('btn-chat-toggle').addEventListener('click', () => {
+            const chat = document.getElementById('chat-container');
+            const btn = document.getElementById('btn-chat-toggle');
+            if (chat.style.display === 'none') {
+                chat.style.display = 'flex';
+                btn.innerText = "CHAT: TAMPIL";
+            } else {
+                chat.style.display = 'none';
+                btn.innerText = "CHAT: SEMBUNYI";
+            }
+        });
+
+        document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const box = document.getElementById('chat-messages');
+            const msg = document.createElement('div');
+            msg.className = 'chat-msg';
+            msg.innerHTML = `<span class="chat-user">${myUsername}:</span> ${text}`;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+            input.value = '';
         }
 
         function onWindowResize() {
@@ -2133,101 +1531,58 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- GAME LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
+            const delta = clock.getDelta();
+
             if (!isPlayerSitting) {
-                camera.quaternion.setFromEuler(new THREE.Euler(player.rotation.x, player.rotation.y, 0, 'YXZ'));
-            }
+                const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
+                const dirY = Math.sin(player.rotation.x);
+                const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
+                const lookTarget = player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ));
+                camera.lookAt(lookTarget);
 
-            // Pergerakan WASD / Joystick
-            if (!isPlayerSitting && isJoystickActive && (moveDirection.x !== 0 || moveDirection.y !== 0)) {
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-                forward.y = 0; forward.normalize();
-                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-                right.y = 0; right.normalize();
+                const moveForward = inputState.forward * player.speed;
+                const moveSide = inputState.side * player.speed;
 
-                const moveVec = new THREE.Vector3();
-                moveVec.addScaledVector(forward, moveDirection.y * player.speed);
-                moveVec.addScaledVector(right, moveDirection.x * player.speed);
-                camera.position.add(moveVec);
-            }
+                const frontVector = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(moveForward);
+                const sideVector = new THREE.Vector3(Math.cos(player.rotation.y), 0, -Math.sin(player.rotation.y)).multiplyScalar(moveSide);
 
-            // Deteksi Berenang di Air & Gravitasi
-            if (!isPlayerSitting) {
-                const px = Math.round(camera.position.x);
-                const py = Math.round(camera.position.y);
-                const pz = Math.round(camera.position.z);
-                const standingBlock = voxelMap[`${px},${Math.round(camera.position.y - player.height)},${pz}`];
-                
-                let isInWater = false;
-                if (standingBlock) {
-                    const standingCfg = minecraftBlocks.find(b => b.id === standingBlock.id);
-                    if (standingCfg && standingCfg.type === 'water') {
-                        isInWater = true;
-                    }
-                }
+                player.position.add(frontVector).add(sideVector);
 
-                camera.position.y += player.velocity.y;
-                let groundHeight = -10;
+                player.velocity.y -= 0.008;
+                player.position.y += player.velocity.y;
 
-                for (let y = 10; y > -10; y--) {
-                    const blockInPos = voxelMap[`${px},${y},${pz}`];
-                    if (blockInPos) {
-                        const bCfg = minecraftBlocks.find(b => b.id === blockInPos.id);
-                        if (bCfg && bCfg.type !== 'water') { 
-                            groundHeight = y + 0.5 + player.height;
-                            break;
-                        }
-                    }
-                }
-
-                if (isInWater) {
-                    player.velocity.y = Math.max(-0.02, player.velocity.y - 0.002);
-                    player.onGround = true; 
-                    if (camera.position.y <= groundHeight) {
-                        camera.position.y = groundHeight;
-                        player.velocity.y = 0;
-                    }
-                } else if (camera.position.y <= groundHeight) {
-                    // Ambang batas jatuh (-0.22) sehingga lompatan biasa tidak memberikan damage
-                    if (currentGamemode === "Survival" && player.velocity.y < -0.22) {
-                        const damage = Math.round((Math.abs(player.velocity.y) - 0.20) * 200);
-                        playerHealth = Math.max(0, playerHealth - damage);
-                        showToast(`<span style='color:red;'>Aduh! Terluka akibat jatuh (-${damage} HP)</span>`);
-                        
-                        const hearts = document.querySelectorAll('.heart');
-                        const activeHeartsCount = Math.ceil(playerHealth / 20);
-                        hearts.forEach((h, idx) => {
-                            h.style.display = idx < activeHeartsCount ? "block" : "none";
-                        });
-
-                        if (playerHealth <= 0) {
-                            showToast("<span style='color:red; font-weight:bold;'>Steve Gugur! Respawn...</span>");
-                            camera.position.set(0, 8, 0);
-                            playerHealth = 100;
-                            hearts.forEach(h => h.style.display = "block");
-                        }
-                    }
-
-                    camera.position.y = groundHeight;
+                const groundY = 1.6;
+                if (player.position.y <= groundY) {
+                    player.position.y = groundY;
                     player.velocity.y = 0;
                     player.onGround = true;
-                } else {
-                    player.velocity.y -= 0.007;
-                    player.onGround = false;
                 }
+
+                camera.position.copy(player.position);
             }
 
-            if (camera.position.y < -15) {
-                camera.position.set(0, 8, 0);
-                player.velocity.set(0, 0, 0);
+            raycaster.setFromCamera(mouseCenter, camera);
+            const intersects = raycaster.intersectObjects(blocksGroup);
+
+            if (intersects.length > 0) {
+                targetedBlockInfo = intersects[0];
+                const mesh = targetedBlockInfo.mesh;
+                highlightBox.position.copy(mesh.position);
+                highlightBox.visible = true;
+
+                const bName = getBlockData(mesh.userData.id).name;
+                document.getElementById('block-focused').innerText = `Membidik: ${bName} (${mesh.position.x}, ${mesh.position.y}, ${mesh.position.z})`;
+            } else {
+                targetedBlockInfo = null;
+                highlightBox.visible = false;
+                document.getElementById('block-focused').innerText = `Membidik: -`;
             }
 
-            document.getElementById('coords-display').innerText = `Posisi: X:${Math.round(camera.position.x)} Y:${Math.round(camera.position.y - player.height)} Z:${Math.round(camera.position.z)}`;
+            document.getElementById('coords-display').innerText = `Posisi: X:${Math.round(player.position.x)} Y:${Math.round(player.position.y)} Z:${Math.round(player.position.z)}`;
 
-            updateRaycasting();
             renderer.render(scene, camera);
         }
     </script>
