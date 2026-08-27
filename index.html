@@ -722,18 +722,18 @@
     </div>
 
     <script>
-        // --- KONFIGURASI SUPABASE ---
+        // --- KONFIGURASI SUPABASE SAFE FALLBACK ---
         const SUPABASE_URL = 'https://cygedpwyqnpggliemawp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Z2VkcHd5cW5wZ2dsaWVtYXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NzM2NTQsImV4cCI6MjEwMzM0OTY1NH0.sOArw0RueqxMl4vRArXiJjdyKem__Xsqml16VzlqyBM';
 
         let supabaseClient = null;
-        if (typeof supabase !== 'undefined') {
-            try {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        try {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log("Supabase Client berhasil terhubung!");
-            } catch(e) {
-                console.warn("Gagal inisialisasi Supabase Client:", e);
             }
+        } catch(e) {
+            console.warn("Koneksi Supabase dilewati, berjalan mode offline:", e);
         }
 
         // --- DATABASE BLOK UTAMA ---
@@ -1109,7 +1109,7 @@
 
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                const key = e.key.toLowerCase();
+                const key = e.key ? e.key.toLowerCase() : '';
                 if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
                 if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
                 if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
@@ -1124,7 +1124,7 @@
             });
 
             window.addEventListener('keyup', (e) => {
-                const key = e.key.toLowerCase();
+                const key = e.key ? e.key.toLowerCase() : '';
                 if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
                 if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
                 if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
@@ -1132,7 +1132,6 @@
                 if (e.code === 'Space' || key === ' ') keys.space = false;
             });
 
-            // Lock Kursor Mouse & Drag Control untuk PC
             const gameContainer = document.getElementById('game-container');
             
             gameContainer.addEventListener('mousedown', (e) => {
@@ -1143,7 +1142,7 @@
                 prevMouseX = e.clientX;
                 prevMouseY = e.clientY;
 
-                if (!isPointerLocked) {
+                if (!isPointerLocked && renderer && renderer.domElement.requestPointerLock) {
                     renderer.domElement.requestPointerLock();
                 }
             });
@@ -1171,32 +1170,155 @@
                 }
             });
 
-            // Klik Kanan / Kiri Mouse PC untuk Pasang / Hancurkan Blok
-            renderer.domElement.addEventListener('click', (e) => {
-                if (!targetedBlockInfo) return;
-                const mesh = targetedBlockInfo.mesh;
+            if (renderer && renderer.domElement) {
+                renderer.domElement.addEventListener('click', (e) => {
+                    if (!targetedBlockInfo) return;
+                    const mesh = targetedBlockInfo.mesh;
 
-                if (e.button === 0) {
-                    if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
-                        interactWithBlock(mesh);
-                    } else {
-                        removeBlockMesh(mesh.position.x, mesh.position.y, mesh.position.z);
-                        showToast("Blok Dihancurkan!");
+                    if (e.button === 0) {
+                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
+                            interactWithBlock(mesh);
+                        } else {
+                            removeBlockMesh(mesh.position.x, mesh.position.y, mesh.position.z);
+                            showToast("Blok Dihancurkan!");
+                        }
+                    }
+                });
+
+                renderer.domElement.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if (!targetedBlockInfo) return;
+                    const mesh = targetedBlockInfo.mesh;
+                    const normal = targetedBlockInfo.face.normal;
+                    const newX = mesh.position.x + normal.x;
+                    const newY = mesh.position.y + normal.y;
+                    const newZ = mesh.position.z + normal.z;
+
+                    if (selectedItem.type === 'block') {
+                        createBlockMesh(newX, newY, newZ, selectedItem.id);
+                    }
+                });
+            }
+        }
+
+        // --- SETUP KONTROL TOUCH / JOYSTICK MOBILE ---
+        function setupTouchAndControls() {
+            const joystickContainer = document.getElementById('joystick-container');
+            const joystickKnob = document.getElementById('joystick-knob');
+            let joyTouchId = null;
+            let joyCenter = { x: 0, y: 0 };
+
+            joystickContainer.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                joyTouchId = touch.identifier;
+                const rect = joystickContainer.getBoundingClientRect();
+                joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === joyTouchId) {
+                        const dx = touch.clientX - joyCenter.x;
+                        const dy = touch.clientY - joyCenter.y;
+                        const dist = Math.min(Math.hypot(dx, dy), 40);
+                        const angle = Math.atan2(dy, dx);
+
+                        const knobX = Math.cos(angle) * dist;
+                        const knobY = Math.sin(angle) * dist;
+                        joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+                        inputState.forward = -Math.sin(angle) * (dist / 40);
+                        inputState.side = Math.cos(angle) * (dist / 40);
+                    } else if (touch.identifier === touchLookId) {
+                        const movementX = touch.clientX - lastTouchX;
+                        const movementY = touch.clientY - lastTouchY;
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
+
+                        player.rotation.x -= movementY * 0.005;
+                        player.rotation.y -= movementX * 0.005;
+                        player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
+                    }
+                }
+            }, { passive: false });
+
+            const resetJoystick = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joyTouchId) {
+                        joyTouchId = null;
+                        joystickKnob.style.transform = `translate(0px, 0px)`;
+                        inputState.forward = 0;
+                        inputState.side = 0;
+                    } else if (e.changedTouches[i].identifier === touchLookId) {
+                        touchLookId = null;
+                    }
+                }
+            };
+
+            window.addEventListener('touchend', resetJoystick);
+            window.addEventListener('touchcancel', resetJoystick);
+
+            window.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.clientX > window.innerWidth / 2 && touchLookId === null) {
+                        touchLookId = touch.identifier;
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
                     }
                 }
             });
 
-            renderer.domElement.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                if (!targetedBlockInfo) return;
-                const mesh = targetedBlockInfo.mesh;
-                const normal = targetedBlockInfo.face.normal;
-                const newX = mesh.position.x + normal.x;
-                const newY = mesh.position.y + normal.y;
-                const newZ = mesh.position.z + normal.z;
+            let touchTimer = null;
+            let touchStartPos = { x: 0, y: 0 };
 
-                if (selectedItem.type === 'block') {
-                    createBlockMesh(newX, newY, newZ, selectedItem.id);
+            window.addEventListener('touchstart', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#hotbar-container') || e.target.closest('#joystick-container')) return;
+
+                const touch = e.touches[0];
+                touchStartPos = { x: touch.clientX, y: touch.clientY };
+
+                touchTimer = setTimeout(() => {
+                    if (targetedBlockInfo) {
+                        const p = targetedBlockInfo.mesh.position;
+                        removeBlockMesh(p.x, p.y, p.z);
+                        showToast("Blok Dihancurkan!");
+                    }
+                }, 500);
+            });
+
+            window.addEventListener('touchend', (e) => {
+                if (touchTimer) {
+                    clearTimeout(touchTimer);
+                    const touch = e.changedTouches[0];
+                    const dist = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
+
+                    if (dist < 10 && targetedBlockInfo) {
+                        if (e.target.tagName === 'BUTTON' || e.target.closest('#hotbar-container')) return;
+
+                        const mesh = targetedBlockInfo.mesh;
+                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
+                            interactWithBlock(mesh);
+                        } else {
+                            const normal = targetedBlockInfo.face.normal;
+                            const newX = mesh.position.x + normal.x;
+                            const newY = mesh.position.y + normal.y;
+                            const newZ = mesh.position.z + normal.z;
+
+                            if (selectedItem.type === 'block') {
+                                createBlockMesh(newX, newY, newZ, selectedItem.id);
+                            }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('btn-jump').addEventListener('click', () => {
+                if (player.onGround && !isPlayerSitting) {
+                    player.velocity.y = 0.15;
+                    player.onGround = false;
                 }
             });
         }
@@ -1402,16 +1524,20 @@
 
         async function loadWorldFromSupabase() {
             if (!supabaseClient) return;
-            const { data, error } = await supabaseClient.from('world_blocks').select('*');
-            if (error) {
-                console.error("Gagal memuat dari Supabase:", error);
-                return;
-            }
-            if (data && data.length > 0) {
-                data.forEach(b => {
-                    createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
-                });
-                showToast(`Dimuat ${data.length} blok dari Supabase Cloud!`);
+            try {
+                const { data, error } = await supabaseClient.from('world_blocks').select('*');
+                if (error) {
+                    console.error("Gagal memuat dari Supabase:", error);
+                    return;
+                }
+                if (data && data.length > 0) {
+                    data.forEach(b => {
+                        createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
+                    });
+                    showToast(`Dimuat ${data.length} blok dari Supabase Cloud!`);
+                }
+            } catch(e) {
+                console.warn("Gagal terhubung dengan database cloud:", e);
             }
         }
 
@@ -1421,24 +1547,26 @@
                 return;
             }
 
-            // Load blok yang tersimpan di cloud saat mulai
             loadWorldFromSupabase();
 
-            // Berlangganan perubahan real-time dari pemain lain
-            supabaseClient
-                .channel('public:world_blocks')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'world_blocks' }, payload => {
-                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        const b = payload.new;
-                        createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
-                    } else if (payload.eventType === 'DELETE') {
-                        const b = payload.old;
-                        if (b && b.x !== undefined) {
-                            removeBlockMesh(b.x, b.y, b.z, false);
+            try {
+                supabaseClient
+                    .channel('public:world_blocks')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'world_blocks' }, payload => {
+                        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                            const b = payload.new;
+                            createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
+                        } else if (payload.eventType === 'DELETE') {
+                            const b = payload.old;
+                            if (b && b.x !== undefined) {
+                                removeBlockMesh(b.x, b.y, b.z, false);
+                            }
                         }
-                    }
-                })
-                .subscribe();
+                    })
+                    .subscribe();
+            } catch(e) {
+                console.warn("Realtime channel gagal diinisialisasi:", e);
+            }
         }
 
         document.getElementById('btn-mode-toggle').addEventListener('click', () => {
@@ -1525,18 +1653,21 @@
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
+            if (!clock || !scene || !camera || !renderer) return;
+
             const delta = clock.getDelta();
 
             if (!isPlayerSitting) {
-                // Hitung input gerakan gabungan dari Touch Joystick & Keyboard PC
                 let forwardInput = inputState.forward;
                 let sideInput = inputState.side;
 
@@ -1554,11 +1685,9 @@
 
                 player.position.add(frontVector).add(sideVector);
 
-                // Gravitasi & Deteksi Kolisi dengan Blok di Bawah Pemain
                 player.velocity.y -= 0.008;
                 player.position.y += player.velocity.y;
 
-                // Cari ketinggian tanah dari voxel map
                 const pX = Math.round(player.position.x);
                 const pZ = Math.round(player.position.z);
                 let highestGroundY = -10;
