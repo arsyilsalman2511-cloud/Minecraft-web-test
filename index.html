@@ -557,7 +557,7 @@
     <div id="lobby-container">
         <div class="lobby-card">
             <h1>MINECRAFT PE v26.1</h1>
-            <p>KONTROL TAP & HOLD - CUSTOM BLOCK & VISCOSITY</p>
+            <p>KONTROL TAP & HOLD / WASD PC - CUSTOM BLOCK & VISCOSITY</p>
             
             <label style="font-size: 10px; display: block; text-align: left;">NAMA KARAKTER:</label>
             <input type="text" id="username-input" class="lobby-input" value="SainsSteve" maxlength="12">
@@ -852,7 +852,11 @@
             { type: 'block', id: 11 }
         ];
 
+        // --- SISTEM INPUT KONTROL (MOBILE & PC KEYBOARD/MOUSE) ---
         const inputState = { forward: 0, side: 0, jump: false };
+        const keys = { w: false, a: false, s: false, d: false, space: false };
+        let isPointerLocked = false;
+
         let touchLookId = null;
         let lastTouchX = 0, lastTouchY = 0;
         let raycaster, mouseCenter;
@@ -924,6 +928,7 @@
 
             window.addEventListener('resize', onWindowResize);
             setupTouchAndControls();
+            setupPCControls();
         }
 
         function generateTerrain() {
@@ -1097,6 +1102,86 @@
         }
         document.getElementById('btn-unseat').addEventListener('click', standUpFromChair);
 
+        // --- SETUP KONTROL KEYBOARD & MOUSE PC ---
+        function setupPCControls() {
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
+                if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
+                if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
+                if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
+                if (e.code === 'Space') {
+                    keys.space = true;
+                    if (player.onGround && !isPlayerSitting) {
+                        player.velocity.y = 0.15;
+                        player.onGround = false;
+                    }
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
+                if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
+                if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
+                if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
+                if (e.code === 'Space') keys.space = false;
+            });
+
+            // Lock Kursor Mouse untuk PC
+            const gameContainer = document.getElementById('game-container');
+            gameContainer.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#chat-container') || e.target.closest('#hotbar-container')) {
+                    return;
+                }
+                if (document.pointerLockElement !== renderer.domElement) {
+                    renderer.domElement.requestPointerLock();
+                }
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isPointerLocked = (document.pointerLockElement === renderer.domElement);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isPointerLocked) {
+                    player.rotation.y -= e.movementX * 0.002;
+                    player.rotation.x -= e.movementY * 0.002;
+                    player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
+                }
+            });
+
+            // Klik Kanan / Kiri Mouse PC untuk Pasang / Hancurkan Blok
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                if (!isPointerLocked || !targetedBlockInfo) return;
+                const mesh = targetedBlockInfo.mesh;
+
+                if (e.button === 0) {
+                    // Klik Kiri: Hancurkan atau Interaksi
+                    if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
+                        interactWithBlock(mesh);
+                    } else {
+                        removeBlockMesh(mesh.position.x, mesh.position.y, mesh.position.z);
+                        showToast("Blok Dihancurkan!");
+                    }
+                } else if (e.button === 2) {
+                    // Klik Kanan: Pasang Blok
+                    const normal = targetedBlockInfo.face.normal;
+                    const newX = mesh.position.x + normal.x;
+                    const newY = mesh.position.y + normal.y;
+                    const newZ = mesh.position.z + normal.z;
+
+                    if (selectedItem.type === 'block') {
+                        createBlockMesh(newX, newY, newZ, selectedItem.id);
+                    }
+                }
+            });
+
+            window.addEventListener('contextmenu', (e) => {
+                if (isPointerLocked) e.preventDefault();
+            });
+        }
+
+        // --- SETUP KONTROL TOUCH / JOYSTICK MOBILE ---
         function setupTouchAndControls() {
             const joystickContainer = document.getElementById('joystick-container');
             const joystickKnob = document.getElementById('joystick-knob');
@@ -1553,14 +1638,26 @@
             const delta = clock.getDelta();
 
             if (!isPlayerSitting) {
+                // Hitung input gerakan gabungan dari Touch Joystick & Keyboard PC
+                let forwardInput = inputState.forward;
+                let sideInput = inputState.side;
+
+                if (keys.w) forwardInput += 1;
+                if (keys.s) forwardInput -= 1;
+                if (keys.d) sideInput += 1;
+                if (keys.a) sideInput -= 1;
+
+                forwardInput = Math.max(-1, Math.min(1, forwardInput));
+                sideInput = Math.max(-1, Math.min(1, sideInput));
+
                 const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
                 const dirY = Math.sin(player.rotation.x);
                 const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
                 const lookTarget = player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ));
                 camera.lookAt(lookTarget);
 
-                const moveForward = inputState.forward * player.speed;
-                const moveSide = inputState.side * player.speed;
+                const moveForward = forwardInput * player.speed;
+                const moveSide = sideInput * player.speed;
 
                 const frontVector = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(moveForward);
                 const sideVector = new THREE.Vector3(Math.cos(player.rotation.y), 0, -Math.sin(player.rotation.y)).multiplyScalar(moveSide);
