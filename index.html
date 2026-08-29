@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft Mobile PE & Education Edition - Ultimate</title>
-    <!-- Three.js (Grafis 3D Engine) -->
+    <title>Minecraft Mobile & Desktop Hybrid Edition</title>
+    <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Supabase Client JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body, html {
             margin: 0;
@@ -32,6 +30,7 @@
             display: block;
             width: 100%;
             height: 100%;
+            cursor: crosshair;
         }
 
         /* Lobi Utama */
@@ -61,28 +60,42 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
         }
         .lobby-card h1 {
-            font-size: 22px;
+            font-size: 20px;
             margin: 0 0 5px 0;
             color: #2ecc71;
             letter-spacing: 2px;
         }
         .lobby-card p {
-            font-size: 10px;
+            font-size: 9px;
             color: #95a5a6;
-            margin: 0 0 20px 0;
+            margin: 0 0 15px 0;
         }
         .lobby-input {
             width: 100%;
-            padding: 10px;
-            margin: 8px 0;
+            padding: 8px;
+            margin: 6px 0;
             box-sizing: border-box;
             background: #0d1117;
             border: 2px solid #4f5d73;
             color: white;
             font-family: monospace;
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             border-radius: 4px;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 12px 0;
+            font-size: 11px;
+            color: #ecf0f1;
+            cursor: pointer;
+        }
+        .checkbox-container input {
+            transform: scale(1.3);
+            cursor: pointer;
         }
         .lobby-btn {
             width: 100%;
@@ -90,11 +103,11 @@
             background: #2ecc71;
             color: white;
             border: none;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 4px;
-            margin-top: 15px;
+            margin-top: 10px;
             box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
             text-shadow: 1px 1px 0 #000;
         }
@@ -103,7 +116,7 @@
             box-shadow: none;
         }
 
-        /* Bidikan Crosshair */
+        /* Crosshair */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -133,25 +146,25 @@
             pointer-events: none;
             z-index: 10;
             background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             border: 2px solid #444;
         }
         #hud-controls {
             position: absolute;
             top: 10px;
-            left: 200px;
+            left: 180px;
             z-index: 20;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
         .hud-btn {
             background: rgba(0,0,0,0.6);
             border: 2px solid #666;
             color: white;
-            padding: 6px 12px;
-            font-size: 10px;
+            padding: 5px 10px;
+            font-size: 9px;
             cursor: pointer;
             border-radius: 4px;
             font-family: monospace;
@@ -161,55 +174,56 @@
             background: #27ae60;
         }
 
-        /* Sistem Health Bar (Survival) */
-        #health-container {
+        /* Tombol Aksi Blok & Interaksi Kursi / Kasur */
+        #action-buttons-container {
             position: absolute;
-            bottom: 75px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 20px;
+            right: 20px;
+            z-index: 30;
             display: flex;
-            gap: 3px;
-            z-index: 20;
+            flex-direction: column;
+            gap: 10px;
         }
-        .heart {
-            width: 12px;
-            height: 12px;
-            background: #e74c3c;
-            clip-path: polygon(50% 15%, 80% 0%, 100% 30%, 50% 100%, 0% 30%, 20% 0%);
-        }
-
-        /* Overlay Tidur / Transisi */
-        #sleep-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: black;
-            opacity: 0;
-            display: none;
-            justify-content: center;
-            align-items: center;
+        .action-tool-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.65);
+            border: 3px solid #fff;
+            border-radius: 50%;
             color: white;
-            font-size: 20px;
-            z-index: 400;
-            transition: opacity 1.5s ease;
-            pointer-events: none;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 0px #000;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        .action-tool-btn:active {
+            transform: scale(0.95);
+            background: rgba(46, 204, 113, 0.9);
+        }
+        #btn-break-block { border-color: #e74c3c; background: rgba(231, 76, 60, 0.4); }
+        #btn-place-block { border-color: #2ecc71; background: rgba(46, 204, 113, 0.4); }
+        #btn-sit { border-color: #f1c40f; background: rgba(241, 196, 15, 0.5); display: none; }
+        #btn-stand { border-color: #e67e22; background: rgba(230, 126, 34, 0.6); display: none; }
+        #btn-sleep { border-color: #9b59b6; background: rgba(155, 89, 182, 0.5); display: none; }
+        #btn-door { border-color: #e67e22; background: rgba(230, 126, 34, 0.6); display: none; }
 
         /* Chatbox */
         #chat-container {
             position: absolute;
             top: 10px;
             right: 10px;
-            width: 280px;
+            width: 260px;
             max-width: 45vw;
-            height: 140px;
+            height: 130px;
             background: rgba(0, 0, 0, 0.55);
             border: 2px solid #555;
             border-radius: 4px;
             z-index: 100;
-            display: flex;
+            display: none;
             flex-direction: column;
             color: white;
             font-size: 10px;
@@ -223,7 +237,6 @@
             gap: 3px;
         }
         .chat-msg { word-wrap: break-word; text-shadow: 1px 1px 0 #000; }
-        .chat-system { color: #f1c40f; }
         .chat-user { color: #3498db; font-weight: bold; }
         #chat-input-row { display: flex; border-top: 1px solid #555; }
         #chat-input {
@@ -245,63 +258,58 @@
             cursor: pointer;
         }
 
-        /* Virtual Joystick Mobile */
-        #joystick-container {
+        /* D-Pad Sentuh */
+        #dpad-container {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            width: 110px;
-            height: 110px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 50%;
-            border: 2px solid #777;
+            bottom: 20px;
+            left: 20px;
+            width: 130px;
+            height: 130px;
+            z-index: 30;
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 3px;
+        }
+        .dpad-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #888;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            touch-action: none;
-            z-index: 20;
-        }
-        #joystick-knob {
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            border: 2px solid #fff;
+            border-radius: 6px;
             touch-action: none;
         }
+        .dpad-btn:active {
+            background: rgba(46, 204, 113, 0.8);
+            border-color: #2ecc71;
+        }
+        #dpad-up { grid-column: 2; grid-row: 1; }
+        #dpad-left { grid-column: 1; grid-row: 2; }
+        #dpad-right { grid-column: 3; grid-row: 2; }
+        #dpad-down { grid-column: 2; grid-row: 3; }
 
-        /* Tombol Aksi Sentuh */
+        /* Tombol Lompat */
         .btn-action {
             position: absolute;
-            width: 58px;
-            height: 58px;
+            width: 54px;
+            height: 54px;
             background: rgba(0, 0, 0, 0.5);
             border: 3px solid #888;
             border-radius: 6px;
             color: white;
             font-size: 10px;
             font-weight: bold;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             text-shadow: 1px 1px 0px #000;
-            box-shadow: inset -3px -3px 0px #222, inset 3px 3px 0px #aaa;
-            touch-action: none;
             z-index: 20;
         }
-        .btn-action:active {
-            box-shadow: inset 3px 3px 0px #222, inset -3px -3px 0px #555;
-            background: rgba(0, 0, 0, 0.7);
-        }
-        #btn-jump { bottom: 105px; right: 30px; }
-        #btn-edu { bottom: 30px; right: 30px; background: rgba(52, 152, 219, 0.6); border-color: #2980b9; }
-        #btn-unseat { 
-            display: none; 
-            bottom: 180px; 
-            right: 30px; 
-            background: #e74c3c; 
-            border-color: #c0392b; 
-        }
+        #btn-jump { bottom: 100px; right: 105px; }
 
         /* Hotbar */
         #hotbar-container {
@@ -319,132 +327,50 @@
             overflow-x: auto;
         }
         .hotbar-slot {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             background: rgba(110, 110, 110, 0.95);
             border: 2px solid #7f8c8d;
-            box-shadow: inset -2px -2px 0px #3c3c3c, inset 2px 2px 0px #fff;
             margin: 0 2px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            position: relative;
             flex-shrink: 0;
         }
         .hotbar-slot.active {
             border: 2px solid #f1c40f;
-            box-shadow: inset -2px -2px 0px #b7950b, inset 2px 2px 0px #fffde7;
             background: rgba(150, 150, 150, 1);
         }
         .slot-color-box {
-            width: 22px;
-            height: 22px;
-            border-radius: 3px;
-            border: 1px solid rgba(0,0,0,0.4);
-        }
-        .slot-name {
-            font-size: 6px;
-            color: #000;
-            text-align: center;
-            margin-top: 1px;
-            font-weight: bold;
-        }
-
-        /* Lab Edu Panel */
-        #edu-panel {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            max-width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            background: #2c3e50;
-            border: 4px solid #34495e;
-            border-radius: 8px;
-            z-index: 150;
-            color: white;
-            padding: 12px;
-        }
-        #edu-panel h2 {
-            margin-top: 0;
-            text-align: center;
-            color: #3498db;
-            font-size: 14px;
-            border-bottom: 2px dashed #34495e;
-            padding-bottom: 8px;
-        }
-        .edu-section {
-            background: #1a252f;
-            border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #34495e;
-        }
-        .edu-title {
-            font-weight: bold;
-            color: #2ecc71;
-            margin-bottom: 5px;
-            font-size: 11px;
-        }
-        .constructor-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .constructor-label { font-size: 10px; color: #bdc3c7; }
-        .constructor-controls { display: flex; align-items: center; }
-        .constructor-btn {
-            background: #34495e;
-            border: none;
-            color: white;
             width: 20px;
             height: 20px;
-            font-weight: bold;
             border-radius: 3px;
-            cursor: pointer;
         }
-        .constructor-value { width: 25px; text-align: center; font-weight: bold; font-size: 11px; }
-        #element-preview-box {
+        .slot-name {
+            font-size: 5px;
+            color: #000;
             text-align: center;
-            padding: 10px;
-            background: #111;
-            border: 2px solid #555;
-            border-radius: 4px;
-        }
-        #element-big-symbol { font-size: 40px; font-weight: bold; line-height: 1em; }
-        #element-big-name { font-size: 12px; color: #f1c40f; margin-top: 3px; }
-        .close-edu-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 8px;
             font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
+            margin-top: 1px;
         }
 
-        /* UI Inventaris & Pembuat Blok Kustom */
+        /* Inventory Panel & Custom Block Creator */
         #inventory-panel {
             display: none;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 360px;
+            width: 380px;
             max-width: 95%;
             max-height: 85vh;
             overflow-y: auto;
             background: #1c2530;
             border: 4px solid #2ecc71;
             border-radius: 8px;
-            z-index: 200;
+            z-index: 250;
             color: white;
             padding: 14px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -453,40 +379,32 @@
             margin-top: 0;
             text-align: center;
             color: #2ecc71;
-            font-size: 16px;
+            font-size: 15px;
             border-bottom: 2px dashed #2ecc71;
             padding-bottom: 6px;
         }
         .inv-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 6px;
+            margin-bottom: 10px;
         }
         .inv-item-card {
             background: #0f172a;
             border: 2px solid #475569;
             border-radius: 4px;
-            padding: 6px;
+            padding: 5px;
             text-align: center;
             cursor: pointer;
         }
-        .inv-item-card:hover {
-            border-color: #f1c40f;
-        }
         .inv-item-preview {
-            width: 24px;
-            height: 24px;
-            margin: 0 auto 4px auto;
+            width: 22px;
+            height: 22px;
+            margin: 0 auto 3px auto;
             border-radius: 2px;
-            border: 1px solid rgba(255,255,255,0.2);
         }
-        .inv-item-name {
-            font-size: 8px;
-            word-break: break-all;
-        }
-
-        /* Creator Block Panel Sub UI */
+        .inv-item-name { font-size: 7px; word-break: break-all; }
+        
         #custom-block-creator {
             display: none;
             background: #0f172a;
@@ -499,8 +417,8 @@
             display: grid;
             grid-template-columns: repeat(16, 1fr);
             gap: 1px;
-            width: 224px;
-            height: 224px;
+            width: 200px;
+            height: 200px;
             background: #334155;
             margin: 10px auto;
             border: 2px solid #64748b;
@@ -512,25 +430,36 @@
             cursor: pointer;
         }
         .creator-field {
-            margin: 8px 0;
+            margin: 6px 0;
             text-align: left;
             font-size: 10px;
         }
         .creator-field label {
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             color: #94a3b8;
         }
         .creator-field input, .creator-field select {
             width: 100%;
-            padding: 6px;
+            padding: 5px;
             background: #1e293b;
             border: 1px solid #475569;
             color: white;
             font-family: monospace;
             border-radius: 4px;
             box-sizing: border-box;
-            font-size: 11px;
+            font-size: 10px;
+        }
+        .close-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 7px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
         }
 
         #toast-notification {
@@ -541,97 +470,104 @@
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid #2ecc71;
             color: #fff;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 4px;
             font-size: 10px;
-            pointer-events: none;
             z-index: 1000;
             display: none;
             text-align: center;
+        }
+
+        #sleep-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 1s ease;
         }
     </style>
 </head>
 <body>
 
-    <!-- Lobi Pendaftaran -->
     <div id="lobby-container">
         <div class="lobby-card">
-            <h1>MINECRAFT PE v26.1</h1>
-            <p>KONTROL TAP & HOLD / WASD PC - CUSTOM BLOCK & VISCOSITY</p>
+            <h1>MINECRAFT PE HYBRID</h1>
+            <p>PILIH MODE KONTROL SEBELUM BERMAIN</p>
             
-            <label style="font-size: 10px; display: block; text-align: left;">NAMA KARAKTER:</label>
-            <input type="text" id="username-input" class="lobby-input" value="SainsSteve" maxlength="12">
+            <label style="font-size: 9px; display: block; text-align: left;">NAMA KARAKTER:</label>
+            <input type="text" id="username-input" class="lobby-input" value="Steve" maxlength="12">
 
-            <label style="font-size: 10px; display: block; text-align: left; margin-top: 8px;">SEED DUNIA:</label>
-            <input type="text" id="seed-input" class="lobby-input" value="999" placeholder="Seed Angka">
+            <label style="font-size: 9px; display: block; text-align: left; margin-top: 6px;">SEED DUNIA:</label>
+            <input type="text" id="seed-input" class="lobby-input" value="999">
 
-            <button id="btn-enter-game" class="lobby-btn">MULAI DUNIA KREATIF</button>
+            <label class="checkbox-container">
+                <input type="checkbox" id="mobile-mode-checkbox">
+                <span>Aktifkan Mobile Mode (D-Pad & Tombol UI)</span>
+            </label>
+
+            <button id="btn-enter-game" class="lobby-btn">MASUK KE DUNIA</button>
         </div>
     </div>
 
-    <!-- Antarmuka Gameplay -->
     <div id="game-container">
         <div id="crosshair"></div>
+        <div id="sleep-overlay"></div>
 
-        <!-- HUD Atas -->
         <div id="hud-info">
-            <div><strong>MINECRAFT EDU PE</strong></div>
+            <div><strong>MINECRAFT EDU</strong></div>
             <div id="seed-display">Seed: 999</div>
-            <div id="mode-display">Mode: Kreatif</div>
             <div id="coords-display">Posisi: X:0 Y:0 Z:0</div>
             <div id="block-focused">Membidik: -</div>
+            <div id="time-display">Waktu: Pagi</div>
         </div>
 
-        <!-- Panel Tombol Pengaturan Lanjutan -->
         <div id="hud-controls">
-            <button class="hud-btn" id="btn-inventory-toggle" style="background: #27ae60;">INVENTORY</button>
-            <button class="hud-btn" id="btn-mode-toggle">MODE: KREATIF</button>
-            <button class="hud-btn" id="btn-chat-toggle">CHAT: TAMPIL</button>
+            <button class="hud-btn" id="btn-inventory-toggle">INVENTORY (E)</button>
             <button class="hud-btn" id="btn-save-world">SIMPAN</button>
             <button class="hud-btn" id="btn-load-world">MUAT</button>
         </div>
 
-        <div id="toast-notification"></div>
-
-        <!-- Sesi Tidur & Transisi -->
-        <div id="sleep-overlay">Tidur Nyenyak... Maju ke Pagi Hari</div>
-
-        <!-- Indikator Nyawa Survival -->
-        <div id="health-container" style="display: none;">
-            <div class="heart"></div><div class="heart"></div><div class="heart"></div><div class="heart"></div><div class="heart"></div>
+        <div id="action-buttons-container">
+            <button class="action-tool-btn" id="btn-break-block">HANCUR</button>
+            <button class="action-tool-btn" id="btn-place-block">PASANG</button>
+            <button class="action-tool-btn" id="btn-sit">DUDUK</button>
+            <button class="action-tool-btn" id="btn-stand">BERDIRI</button>
+            <button class="action-tool-btn" id="btn-sleep">TIDUR</button>
+            <button class="action-tool-btn" id="btn-door">PINTO</button>
         </div>
 
-        <!-- Obrolan Real-time -->
+        <div id="toast-notification"></div>
+
         <div id="chat-container">
             <div id="chat-messages"></div>
             <div id="chat-input-row">
-                <input type="text" id="chat-input" placeholder="Kirim obrolan..." maxlength="50">
+                <input type="text" id="chat-input" placeholder="Tekan Alt+C untuk tutup..." maxlength="50">
                 <button id="chat-send">KIRIM</button>
             </div>
         </div>
 
-        <!-- Joystick -->
-        <div id="joystick-container">
-            <div id="joystick-knob"></div>
+        <div id="dpad-container">
+            <button class="dpad-btn" id="dpad-up">▲</button>
+            <button class="dpad-btn" id="dpad-left">◄</button>
+            <button class="dpad-btn" id="dpad-right">►</button>
+            <button class="dpad-btn" id="dpad-down">▼</button>
         </div>
-
-        <!-- Tombol Aksi Sentuh -->
         <div id="btn-jump" class="btn-action"><span>LOMPAT</span></div>
-        <div id="btn-edu" class="btn-action"><span>KIMIA</span></div>
-        <button id="btn-unseat" class="btn-action"><span>BERDIRI</span></button>
 
-        <!-- Hotbar Minecraft -->
         <div id="hotbar-container"></div>
 
-        <!-- Panel Inventaris Utama & Custom Block Creator -->
         <div id="inventory-panel">
             <h2>Inventaris & Pembuat Blok</h2>
             
-            <button class="close-edu-btn" onclick="toggleCustomBlockCreator()" style="background:#3b82f6; margin-bottom:12px;">+ BUAT BLOK BARU (16x16)</button>
+            <button class="close-btn" onclick="toggleCustomBlockCreator()" style="background:#3b82f6; margin-bottom:8px;">+ BUAT BLOK BARU (16x16)</button>
 
-            <!-- Custom Block Creator Panel -->
             <div id="custom-block-creator">
-                <div style="font-weight:bold; color:#3b82f6; font-size:12px; text-align:center;">EDITOR PIXEL BLOK 16x16</div>
+                <div style="font-weight:bold; color:#3b82f6; font-size:11px; text-align:center;">EDITOR PIXEL BLOK 16x16</div>
                 
                 <div class="creator-field">
                     <label>Nama Blok Kustom:</label>
@@ -643,142 +579,256 @@
                     <input type="color" id="custom-color-picker" value="#22c55e">
                 </div>
 
-                <!-- Grid Pixel Editor 16x16 -->
+                <div class="creator-field">
+                    <label>Autofill Bentuk Cepat:</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 4px;">
+                        <button type="button" onclick="applyAutofill('top')" style="padding:4px; font-size:8px; background:#334155; color:white; border:1px solid #475569; border-radius:3px; cursor:pointer;">Setengah Atas</button>
+                        <button type="button" onclick="applyAutofill('bottom')" style="padding:4px; font-size:8px; background:#334155; color:white; border:1px solid #475569; border-radius:3px; cursor:pointer;">Setengah Bawah</button>
+                        <button type="button" onclick="applyAutofill('left')" style="padding:4px; font-size:8px; background:#334155; color:white; border:1px solid #475569; border-radius:3px; cursor:pointer;">Setengah Kiri</button>
+                        <button type="button" onclick="applyAutofill('right')" style="padding:4px; font-size:8px; background:#334155; color:white; border:1px solid #475569; border-radius:3px; cursor:pointer;">Setengah Kanan</button>
+                        <button type="button" onclick="applyAutofill('full')" style="padding:4px; font-size:8px; background:#1e3a8a; color:white; border:1px solid #3b82f6; border-radius:3px; cursor:pointer;">Penuh</button>
+                        <button type="button" onclick="applyAutofill('clear')" style="padding:4px; font-size:8px; background:#7f1d1d; color:white; border:1px solid #ef4444; border-radius:3px; cursor:pointer;">Kosongkan</button>
+                    </div>
+                </div>
+
                 <div class="pixel-editor-grid" id="pixel-grid"></div>
 
                 <div class="creator-field">
                     <label>Sifat / Behavior Blok:</label>
-                    <select id="custom-behavior-select" onchange="onBehaviorTypeChange()">
+                    <select id="custom-behavior-select" onchange="handleBehaviorChange()">
                         <option value="grass">Grass (Rumput)</option>
                         <option value="dirt">Dirt (Tanah)</option>
                         <option value="stone">Stone (Batu)</option>
                         <option value="chair">Chair (Kursi Duduk)</option>
-                        <option value="water">Water (Cairan Mengalir)</option>
-                        <option value="redstone_block">Redstone Block (Sumber Listrik)</option>
-                        <option value="redstone_dust">Redstone Dust (Transmisi)</option>
-                        <option value="redstone_lamp">Redstone Lamp (Lampu Off/On)</option>
-                        <option value="piston">Piston (Hidrolik Pendorong)</option>
-                        <option value="tnt">TNT (Dinamit Meledak)</option>
+                        <option value="bed">Bed (Tempat Tidur)</option>
+                        <option value="door">Door (Pintu)</option>
+                        <option value="tnt">TNT (Dinamit)</option>
                         <option value="diamond_ore">Diamond Ore (Bijih)</option>
+                        <option value="liquid">Liquid (Cairan)</option>
                     </select>
                 </div>
 
-                <!-- Pengaturan Viskositas Kekentalan Cairan -->
-                <div class="creator-field" id="viscosity-container" style="display:none;">
-                    <label>Viskositas / Kekentalan (1-9):</label>
-                    <input type="range" id="custom-viscosity" min="1" max="9" value="6" oninput="updateViscosityLabel()">
-                    <div style="font-size:9px; color:#f1c40f; margin-top:3px;" id="viscosity-info">Aliran Maksimal: 4 Blok</div>
+                <!-- Viscosity slider for liquid behavior -->
+                <div class="creator-field" id="viscosity-container" style="display: none;">
+                    <label>Viscosity (Kekentalan): <span id="viscosity-val">2</span> (Area Aliran = <span id="flow-area-val">13</span>)</label>
+                    <input type="range" id="custom-viscosity-slider" min="0" max="15" value="2" step="1" oninput="updateViscosityLabel()">
                 </div>
 
-                <button class="close-edu-btn" onclick="saveCustomBlock()" style="background:#2ecc71; margin-top:8px;">SIMPAN KE HOTBAR</button>
+                <button class="close-btn" onclick="saveCustomBlock()" style="background:#2ecc71;">SIMPAN KE HOTBAR</button>
             </div>
 
-            <div style="font-size:10px; color:#94a3b8; margin:10px 0 5px 0;">DAFTAR BLOK TERSEDIA:</div>
+            <div style="font-size:9px; color:#94a3b8; margin:8px 0 4px 0;">DAFTAR BLOK TERSEDIA:</div>
             <div class="inv-grid" id="inv-items-list"></div>
 
-            <button class="close-edu-btn" onclick="toggleInventoryPanel()" style="background:#7f8c8d; margin-top:8px;">TUTUP INVENTARIS</button>
-        </div>
-
-        <!-- Modul Lab Elemen Kimia -->
-        <div id="edu-panel">
-            <h2>Sintesis Atom Edu</h2>
-            <div class="edu-section">
-                <div class="edu-title">Partikel Inti</div>
-                <div class="constructor-row">
-                    <span class="constructor-label" style="color:#e74c3c;">Proton (+)</span>
-                    <div class="constructor-controls">
-                        <button class="constructor-btn" onclick="adjustParticle('p', -1)">-</button>
-                        <span id="proton-val" class="constructor-value">1</span>
-                        <button class="constructor-btn" onclick="adjustParticle('p', 1)">+</button>
-                    </div>
-                </div>
-                <div class="constructor-row">
-                    <span class="constructor-label" style="color:#3498db;">Elektron (-)</span>
-                    <div class="constructor-controls">
-                        <button class="constructor-btn" onclick="adjustParticle('e', -1)">-</button>
-                        <span id="electron-val" class="constructor-value">1</span>
-                        <button class="constructor-btn" onclick="adjustParticle('e', 1)">+</button>
-                    </div>
-                </div>
-                <div class="constructor-row">
-                    <span class="constructor-label" style="color:#95a5a6;">Neutron (o)</span>
-                    <div class="constructor-controls">
-                        <button class="constructor-btn" onclick="adjustParticle('n', -1)">-</button>
-                        <span id="neutron-val" class="constructor-value">0</span>
-                        <button class="constructor-btn" onclick="adjustParticle('n', 1)">+</button>
-                    </div>
-                </div>
-            </div>
-            <div class="edu-section" style="background: #111;">
-                <div class="edu-title" style="color: #f1c40f;">Unsur Unik</div>
-                <div id="element-preview-box">
-                    <div id="element-big-symbol" style="color: #2ecc71;">H</div>
-                    <div id="element-big-name">Hidrogen</div>
-                </div>
-            </div>
-            <button class="close-edu-btn" onclick="claimCreatedElement()">SINTESIS & AMBIL</button>
-            <button class="close-edu-btn" onclick="toggleEduPanel()" style="background:#7f8c8d; margin-top:6px;">BATAL</button>
+            <button class="close-btn" onclick="toggleInventory()">TUTUP (E)</button>
         </div>
     </div>
 
     <script>
-        // --- KONFIGURASI SUPABASE SAFE FALLBACK ---
-        const SUPABASE_URL = 'https://cygedpwyqnpggliemawp.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5Z2VkcHd5cW5wZ2dsaWVtYXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NzM2NTQsImV4cCI6MjEwMzM0OTY1NH0.sOArw0RueqxMl4vRArXiJjdyKem__Xsqml16VzlqyBM';
-
-        let supabaseClient = null;
-        try {
-            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log("Supabase Client berhasil terhubung!");
-            }
-        } catch(e) {
-            console.warn("Koneksi Supabase dilewati, berjalan mode offline:", e);
-        }
-
-        // --- DATABASE BLOK UTAMA ---
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
             { id: 2, name: "Tanah", type: "dirt", color: 0x866043 },
             { id: 3, name: "Batu", type: "stone", color: 0x737373 },
             { id: 4, name: "Tempat Tidur", type: "bed", color: 0xe74c3c },
             { id: 5, name: "Kursi Kayu", type: "chair", color: 0xd35400 },
-            { id: 6, name: "Air Biru", type: "water", color: 0x2980b9, transparent: true, opacity: 0.65, viscosity: 6 },
+            { id: 6, name: "Air Biru", type: "liquid", viscosity: 2, flowRange: 13, color: 0x2980b9, transparent: true, opacity: 0.65 },
             { id: 7, name: "Blok Redstone", type: "redstone_block", color: 0xc0392b },
-            { id: 8, name: "Bubuk Redstone", type: "redstone_dust", color: 0x7f0000 },
-            { id: 9, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 },
-            { id: 10, name: "Piston Hidrolik", type: "piston", color: 0x7f8c8d },
-            { id: 11, name: "TNT Dinamit", type: "tnt", color: 0xd35400 },
-            { id: 12, name: "Bijih Berlian", type: "diamond_ore", color: 0x7bc6cc }
+            { id: 8, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 },
+            { id: 9, name: "TNT Dinamit", type: "tnt", color: 0xd35400 },
+            { id: 10, name: "Bijih Berlian", type: "diamond_ore", color: 0x7bc6cc },
+            { id: 11, name: "Pintu Kayu", type: "door", color: 0x8b4513 }
         ];
 
-        // Database Unsur Kimia (Edu Edition)
-        const elementDatabase = {
-            1: { symbol: "H", name: "Hidrogen", color: 0x3498db },
-            6: { symbol: "C", name: "Karbon", color: 0x2c3e50 },
-            8: { symbol: "O", name: "Oksigen", color: 0xffffff },
-            26: { symbol: "Fe", name: "Besi", color: 0x95a5a6 },
-            79: { symbol: "Au", name: "Emas", color: 0xf1c40f },
-            92: { symbol: "U", name: "Uranium", color: 0x2ecc71 },
-            118: { symbol: "Og", name: "Oganesson", color: 0x8e44ad }
-        };
+        let isMobileMode = false;
+        let myUsername = "Steve";
+        let numericSeed = 999;
 
-        for (let i = 1; i <= 118; i++) {
-            if (!elementDatabase[i]) {
-                elementDatabase[i] = { symbol: `Un_${i}`, name: `Elemen ke-${i}`, color: 0x7f8c8d };
+        let scene, camera, renderer, clock;
+        let blocksGroup = [];
+        let voxelMap = {};
+        let activeHotbarIndex = 0;
+        let selectedItem = { type: 'block', id: 1 };
+        const customBlocksDatabase = {};
+        const mobsList = [];
+
+        let isSitting = false;
+        let isSleeping = false;
+        let sitPosition = new THREE.Vector3();
+
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
 
-        let currentGamemode = "Creative"; 
-        let playerHealth = 100;
-        let isPlayerSleeping = false;
-        let isPlayerSitting = false;
-        let originalCameraY = 0;
+                const now = audioCtx.currentTime;
+                if (type === 'break') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'place') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'jump') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(320, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                }
+            } catch (e) {}
+        }
 
-        let myPlayerId = "player_" + Math.floor(Math.random() * 1000);
-        let myUsername = "Steve_PE";
-        let worldSeed = "999";
-        let numericSeed = 999;
+        let player = {
+            position: new THREE.Vector3(0, 6, 0),
+            velocity: new THREE.Vector3(),
+            speed: 0.12,
+            onGround: false,
+            rotation: new THREE.Vector2(0, 0)
+        };
+
+        function checkCollision(pos) {
+            const radius = 0.3;
+            const minX = Math.floor(pos.x - radius);
+            const maxX = Math.floor(pos.x + radius);
+            const minZ = Math.floor(pos.z - radius);
+            const maxZ = Math.floor(pos.z + radius);
+            const minY = Math.floor(pos.y - 1.6);
+            const maxY = Math.floor(pos.y + 0.2);
+
+            for (let x = minX; x <= maxX; x++) {
+                for (let y = minY; y <= maxY; y++) {
+                    for (let z = minZ; z <= maxZ; z++) {
+                        const block = voxelMap[`${x},${y},${z}`];
+                        if (block) {
+                            const data = block.userData || {};
+                            // Memeriksa status pintu
+                            if (data.type === 'door' || data.id === 11) {
+                                // Jika pintu tertutup, anggap sebagai rintangan padat
+                                if (!data.isOpen) {
+                                    return true;
+                                }
+                            } else if (data.type === 'liquid') {
+                                // Blok cairan tidak menghalangi jalan fisik pemain
+                                continue;
+                            } else {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        let hotbarSelection = [
+            { type: 'block', id: 1 },
+            { type: 'block', id: 2 },
+            { type: 'block', id: 3 },
+            { type: 'block', id: 4 },
+            { type: 'block', id: 5 },
+            { type: 'block', id: 6 },
+            { type: 'block', id: 7 }
+        ];
+
+        const keysPressed = { w: false, a: false, s: false, d: false, shift: false };
+        const dpadState = { up: false, down: false, left: false, right: false };
+        let isInventoryOpen = false;
+        let isChatOpen = false;
+        let raycaster, mouseCenter;
+        let targetedBlockInfo = null;
+        let lastValidTargetInfo = null;
+        let highlightBox;
+        let gameTime = 0;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast-notification');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2000);
+        }
+
+        document.getElementById('btn-enter-game').addEventListener('click', () => {
+            myUsername = document.getElementById('username-input').value.trim() || "Steve";
+            isMobileMode = document.getElementById('mobile-mode-checkbox').checked;
+            
+            const seedStr = document.getElementById('seed-input').value.trim() || "999";
+            numericSeed = 0;
+            for (let i = 0; i < seedStr.length; i++) numericSeed += seedStr.charCodeAt(i);
+
+            document.getElementById('seed-display').innerText = `Seed: ${seedStr}`;
+            document.getElementById('lobby-container').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+
+            if (isMobileMode) {
+                document.getElementById('dpad-container').style.display = 'grid';
+                document.getElementById('btn-jump').style.display = 'flex';
+            }
+
+            initThreeJS();
+            generateTerrain();
+            spawnMobs();
+            buildHotbarUI();
+            buildInventoryUI();
+            initPixelEditor();
+            setupInputListeners();
+            animate();
+        });
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.copy(player.position);
+            clock = new THREE.Clock();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+            sun.position.set(50, 100, 50);
+            scene.add(sun);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            raycaster.far = 12;
+            mouseCenter = new THREE.Vector2(0, 0);
+
+            const boxGeo = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+            highlightBox = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true }));
+            highlightBox.visible = false;
+            scene.add(highlightBox);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
 
         const textureCache = {};
         function createPixelTexture(baseColor, topColor, isGrass = false, customCanvas = null) {
@@ -826,147 +876,158 @@
             return tex;
         }
 
-        let scene, camera, renderer, clock;
-        let blocksGroup = [];
-        let voxelMap = {};
-        let activeHotbarIndex = 0;
-        let selectedItem = { type: 'block', id: 1 };
-
-        let player = {
-            position: new THREE.Vector3(0, 8, 0),
-            velocity: new THREE.Vector3(),
-            speed: 0.08,
-            onGround: false,
-            rotation: new THREE.Vector2(0, 0),
-            height: 1.6,
-            flyMode: false
-        };
-
-        let hotbarSelection = [
-            { type: 'block', id: 1 },  
-            { type: 'block', id: 4 },  
-            { type: 'block', id: 5 },  
-            { type: 'block', id: 6 },  
-            { type: 'block', id: 7 },  
-            { type: 'block', id: 9 },  
-            { type: 'block', id: 11 }
-        ];
-
-        // --- SISTEM INPUT KONTROL (MOBILE & PC KEYBOARD/MOUSE) ---
-        const inputState = { forward: 0, side: 0, jump: false };
-        const keys = { w: false, a: false, s: false, d: false, space: false };
-        let isPointerLocked = false;
-
-        let touchLookId = null;
-        let lastTouchX = 0, lastTouchY = 0;
-        let raycaster, mouseCenter;
-        let targetedBlockInfo = null;
-
-        let highlightBox;
-        const otherPlayers = {};
-        const customBlocksDatabase = {};
-
-        function showToast(message) {
-            const toast = document.getElementById('toast-notification');
-            toast.innerText = message;
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 2500);
-        }
-
-        document.getElementById('btn-enter-game').addEventListener('click', () => {
-            myUsername = document.getElementById('username-input').value.trim() || "Steve_PE";
-            worldSeed = document.getElementById('seed-input').value.trim() || "999";
-            
-            numericSeed = 0;
-            for (let i = 0; i < worldSeed.length; i++) {
-                numericSeed += worldSeed.charCodeAt(i);
-            }
-
-            document.getElementById('seed-display').innerText = `Seed: ${worldSeed}`;
-            document.getElementById('lobby-container').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
-
-            initThreeJS();
-            generateTerrain();
-            buildHotbarUI();
-            buildInventoryUI();
-            initPixelEditor();
-            initSupabaseOnline();
-            animate();
-        });
-
-        function initThreeJS() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.copy(player.position);
-
-            clock = new THREE.Clock();
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const sunLight = new THREE.DirectionalLight(0xffffff, 0.7);
-            sunLight.position.set(50, 100, 50);
-            scene.add(sunLight);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.getElementById('game-container').appendChild(renderer.domElement);
-
-            raycaster = new THREE.Raycaster();
-            mouseCenter = new THREE.Vector2(0, 0);
-
-            const boxGeo = new THREE.BoxGeometry(1.01, 1.01, 1.01);
-            const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
-            highlightBox = new THREE.Mesh(boxGeo, boxMat);
-            highlightBox.visible = false;
-            scene.add(highlightBox);
-
-            window.addEventListener('resize', onWindowResize);
-            setupTouchAndControls();
-            setupPCControls();
-        }
-
         function generateTerrain() {
-            const worldSize = 32;
-
-            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
-                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
-                    const heightOffset = Math.floor(Math.sin((x + numericSeed) * 0.2) * 2 + Math.cos((z + numericSeed) * 0.2) * 2);
-                    const surfaceY = 0 + heightOffset;
-
-                    createBlockMesh(x, surfaceY, z, 1, null, false);
-
-                    for (let y = surfaceY - 1; y >= surfaceY - 3; y--) {
-                        createBlockMesh(x, y, z, 2, null, false);
-                    }
-                    createBlockMesh(x, surfaceY - 4, z, 3, null, false);
+            const size = 24;
+            for (let x = -size/2; x < size/2; x++) {
+                for (let z = -size/2; z < size/2; z++) {
+                    const h = Math.floor(Math.sin((x + numericSeed)*0.2)*2 + Math.cos((z + numericSeed)*0.2)*2);
+                    createBlockMesh(x, h, z, 1);
+                    createBlockMesh(x, h-1, z, 2);
+                    createBlockMesh(x, h-2, z, 3);
                 }
             }
         }
 
-        function getBlockData(blockId) {
-            if (customBlocksDatabase[blockId]) return customBlocksDatabase[blockId];
-            return minecraftBlocks.find(b => b.id === blockId) || minecraftBlocks[0];
+        function spawnMobs() {
+            for (let i = 0; i < 3; i++) {
+                const mobGroup = new THREE.Group();
+                const bodyGeo = new THREE.BoxGeometry(0.8, 0.6, 1.2);
+                const bodyMat = new THREE.MeshLambertMaterial({ color: i % 2 === 0 ? 0xffb6c1 : 0x8b4513 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.5;
+                mobGroup.add(body);
+
+                const headGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const head = new THREE.Mesh(headGeo, bodyMat);
+                head.position.set(0, 0.7, 0.7);
+                mobGroup.add(head);
+
+                mobGroup.position.set((Math.random() - 0.5) * 12, 4, (Math.random() - 0.5) * 12);
+                scene.add(mobGroup);
+                mobsList.push({ mesh: mobGroup, angle: Math.random() * Math.PI * 2, speed: 0.02 });
+            }
         }
 
-        function createBlockMesh(x, y, z, blockId, customCanvas = null, syncToCloud = true) {
+        function getBlockData(id) {
+            if (customBlocksDatabase[id]) return customBlocksDatabase[id];
+            return minecraftBlocks.find(b => b.id === id) || minecraftBlocks[0];
+        }
+
+        function createBlockMesh(x, y, z, id) {
             const key = `${x},${y},${z}`;
-            if (voxelMap[key]) removeBlockMesh(x, y, z, false);
+            if (voxelMap[key]) {
+                removeBlockMesh(x, y, z);
+            }
+            const bData = getBlockData(id);
+            
+            if (id === 11 || bData.type === 'door') {
+                const doorGroup = new THREE.Group();
+                let doorMat = bData.canvas ? 
+                    new THREE.MeshLambertMaterial({ map: createPixelTexture(null, null, false, bData.canvas) }) : 
+                    new THREE.MeshLambertMaterial({ map: createPixelTexture(bData.color || 0x8b4513, null, false) });
+                const handleMat = new THREE.MeshLambertMaterial({ color: 0xd4af37 });
 
-            const bData = getBlockData(blockId);
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
+                // Door Panel Mesh (Width 1, Height 2, Depth 0.25)
+                // Offset mesh position relative to pivot so door rotates along one edge (hinge)
+                const panelGeo = new THREE.BoxGeometry(1, 2, 0.25);
+                const panelMesh = new THREE.Mesh(panelGeo, doorMat);
+                panelMesh.position.set(0.5, 1, 0.125);
+                doorGroup.add(panelMesh);
+
+                // Door Knob / Handle
+                const handleGeo = new THREE.BoxGeometry(0.08, 0.15, 0.35);
+                const handleMesh = new THREE.Mesh(handleGeo, handleMat);
+                handleMesh.position.set(0.85, 1, 0.125);
+                doorGroup.add(handleMesh);
+
+                // Set pivot container at (x - 0.5, y - 0.5, z - 0.125) so bottom rests on the surface
+                doorGroup.position.set(x - 0.5, y - 0.5, z - 0.125);
+                doorGroup.userData = { id: id, type: bData.type, isOpen: false, basePos: { x: x, y: y, z: z } };
+
+                doorGroup.traverse(child => {
+                    if (child.isMesh) {
+                        child.userData = doorGroup.userData;
+                        blocksGroup.push(child);
+                    }
+                });
+
+                scene.add(doorGroup);
+                voxelMap[key] = doorGroup;
+                voxelMap[`${x},${y+1},${z}`] = doorGroup;
+                return;
+            }
+
+            if (id === 5 || bData.type === 'chair') {
+                const chairGroup = new THREE.Group();
+                let mat = bData.canvas ? new THREE.MeshLambertMaterial({ map: createPixelTexture(null, null, false, bData.canvas) }) : new THREE.MeshLambertMaterial({ map: createPixelTexture(bData.color || 0xd35400, null, false) });
+
+                const seatGeo = new THREE.BoxGeometry(0.8, 0.15, 0.8);
+                const seat = new THREE.Mesh(seatGeo, mat);
+                seat.position.y = 0.3;
+                chairGroup.add(seat);
+
+                const backGeo = new THREE.BoxGeometry(0.8, 0.7, 0.12);
+                const back = new THREE.Mesh(backGeo, mat);
+                back.position.set(0, 0.7, -0.34);
+                chairGroup.add(back);
+
+                const legGeo = new THREE.BoxGeometry(0.1, 0.6, 0.1);
+                [[-0.32, 0, -0.32], [0.32, 0, -0.32], [-0.32, 0, 0.32], [0.32, 0, 0.32]].forEach(p => {
+                    const leg = new THREE.Mesh(legGeo, mat);
+                    leg.position.set(p[0], 0.05, p[2]);
+                    chairGroup.add(leg);
+                });
+
+                chairGroup.position.set(x, y, z);
+                chairGroup.userData = { id: id, type: bData.type };
+                chairGroup.traverse(child => { if (child.isMesh) { child.userData = chairGroup.userData; blocksGroup.push(child); } });
+                scene.add(chairGroup);
+                voxelMap[key] = chairGroup;
+                return;
+            }
+
+            if (id === 4 || bData.type === 'bed') {
+                const bedGroup = new THREE.Group();
+                let bedMat = bData.canvas ? new THREE.MeshLambertMaterial({ map: createPixelTexture(null, null, false, bData.canvas) }) : new THREE.MeshLambertMaterial({ map: createPixelTexture(bData.color || 0xe74c3c, null, false) });
+                const whiteMat = new THREE.MeshLambertMaterial({ map: createPixelTexture(0xffffff, null, false) });
+                const woodMat = new THREE.MeshLambertMaterial({ map: createPixelTexture(0x866043, null, false) });
+
+                const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.9), bedMat);
+                headMesh.position.set(0, 0.2, 0);
+                bedGroup.add(headMesh);
+
+                const pillowMesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.35), whiteMat);
+                pillowMesh.position.set(0, 0.4, -0.25);
+                bedGroup.add(pillowMesh);
+
+                const footMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.9), bedMat);
+                footMesh.position.set(0, 0.2, 1.0);
+                bedGroup.add(footMesh);
+
+                const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.1, 1.95), woodMat);
+                frameMesh.position.set(0, 0.05, 0.5);
+                bedGroup.add(frameMesh);
+
+                bedGroup.position.set(x, y, z);
+                bedGroup.userData = { id: id, type: bData.type };
+                bedGroup.traverse(child => { if (child.isMesh) { child.userData = bedGroup.userData; blocksGroup.push(child); } });
+                scene.add(bedGroup);
+                voxelMap[key] = bedGroup;
+                voxelMap[`${x},${y},${z+1}`] = bedGroup;
+                return;
+            }
+
             let material;
-
-            if (bData.type === 'grass') {
-                const sideTex = createPixelTexture(bData.sideColor || 0x866043, bData.topColor || 0x5c9e32, true);
-                const topTex = createPixelTexture(bData.topColor || 0x5c9e32, null, false);
-                const bottomTex = createPixelTexture(bData.color || 0x866043, null, false);
-
+            if (bData.canvas) {
+                material = new THREE.MeshLambertMaterial({ 
+                    map: createPixelTexture(null, null, false, bData.canvas),
+                    transparent: bData.transparent || false,
+                    opacity: bData.opacity || 1.0
+                });
+            } else if (bData.type === 'grass') {
+                const sideTex = createPixelTexture(0x866043, 0x5c9e32, true);
+                const topTex = createPixelTexture(0x5c9e32, null, false);
+                const bottomTex = createPixelTexture(0x866043, null, false);
                 material = [
                     new THREE.MeshLambertMaterial({ map: sideTex }),
                     new THREE.MeshLambertMaterial({ map: sideTex }),
@@ -975,352 +1036,20 @@
                     new THREE.MeshLambertMaterial({ map: sideTex }),
                     new THREE.MeshLambertMaterial({ map: sideTex })
                 ];
-            } else if (customCanvas) {
-                const tex = createPixelTexture(null, null, false, customCanvas);
-                material = new THREE.MeshLambertMaterial({ map: tex });
             } else {
-                const tex = createPixelTexture(bData.color, null, false);
                 material = new THREE.MeshLambertMaterial({
-                    map: tex,
+                    map: createPixelTexture(bData.color),
                     transparent: bData.transparent || false,
                     opacity: bData.opacity || 1.0
                 });
             }
 
-            const mesh = new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
             mesh.position.set(x, y, z);
-            mesh.userData = { id: blockId, type: bData.type, key: key, isPowered: false };
-
+            mesh.userData = { id: id, type: bData.type, viscosity: bData.viscosity, flowRange: bData.flowRange };
             scene.add(mesh);
             blocksGroup.push(mesh);
             voxelMap[key] = mesh;
-
-            updateRedstoneNetwork();
-
-            if (syncToCloud && supabaseClient) {
-                saveBlockToSupabase(x, y, z, blockId);
-            }
-
-            return mesh;
-        }
-
-        function removeBlockMesh(x, y, z, syncToCloud = true) {
-            const key = `${x},${y},${z}`;
-            const mesh = voxelMap[key];
-            if (mesh) {
-                scene.remove(mesh);
-                blocksGroup = blocksGroup.filter(b => b !== mesh);
-                delete voxelMap[key];
-                updateRedstoneNetwork();
-
-                if (syncToCloud && supabaseClient) {
-                    removeBlockFromSupabase(x, y, z);
-                }
-            }
-        }
-
-        function updateRedstoneNetwork() {
-            Object.keys(voxelMap).forEach(key => {
-                const b = voxelMap[key];
-                if (b.userData.type === 'redstone_lamp') {
-                    let powered = false;
-                    const pos = b.position;
-                    const neighbors = [
-                        `${pos.x+1},${pos.y},${pos.z}`, `${pos.x-1},${pos.y},${pos.z}`,
-                        `${pos.x},${pos.y+1},${pos.z}`, `${pos.x},${pos.y-1},${pos.z}`,
-                        `${pos.x},${pos.y},${pos.z+1}`, `${pos.x},${pos.y},${pos.z-1}`
-                    ];
-                    neighbors.forEach(nKey => {
-                        if (voxelMap[nKey] && voxelMap[nKey].userData.type === 'redstone_block') {
-                            powered = true;
-                        }
-                    });
-
-                    if (powered && !b.userData.isPowered) {
-                        b.userData.isPowered = true;
-                        b.material.color.setHex(0xffff00);
-                    } else if (!powered && b.userData.isPowered) {
-                        b.userData.isPowered = false;
-                        b.material.color.setHex(0x3e2723);
-                    }
-                }
-            });
-        }
-
-        function interactWithBlock(mesh) {
-            const bType = mesh.userData.type;
-
-            if (bType === 'bed') {
-                if (isPlayerSleeping) return;
-                isPlayerSleeping = true;
-                const overlay = document.getElementById('sleep-overlay');
-                overlay.style.display = 'flex';
-                setTimeout(() => { overlay.style.opacity = '1'; }, 10);
-
-                setTimeout(() => {
-                    scene.background.setHex(0x87ceeb);
-                    overlay.style.opacity = '0';
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                        isPlayerSleeping = false;
-                        showToast("Anda bangun di pagi hari yang cerah!");
-                    }, 1500);
-                }, 3000);
-            }
-            else if (bType === 'chair') {
-                if (!isPlayerSitting) {
-                    isPlayerSitting = true;
-                    originalCameraY = player.position.y;
-                    player.position.copy(mesh.position);
-                    player.position.y += 0.6;
-                    document.getElementById('btn-unseat').style.display = 'flex';
-                    showToast("Duduk di kursi. Tekan BERDIRI untuk lepas.");
-                }
-            }
-            else if (bType === 'tnt') {
-                const pos = mesh.position.clone();
-                removeBlockMesh(pos.x, pos.y, pos.z);
-                showToast("BOOM! TNT Meledak!");
-
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        for (let dz = -1; dz <= 1; dz++) {
-                            removeBlockMesh(pos.x + dx, pos.y + dy, pos.z + dz);
-                        }
-                    }
-                }
-            }
-        }
-
-        function standUpFromChair() {
-            if (isPlayerSitting) {
-                isPlayerSitting = false;
-                player.position.y += 1.0;
-                document.getElementById('btn-unseat').style.display = 'none';
-                showToast("Berdiri dari kursi.");
-            }
-        }
-        document.getElementById('btn-unseat').addEventListener('click', standUpFromChair);
-
-        // --- SETUP KONTROL KEYBOARD & MOUSE PC ---
-        function setupPCControls() {
-            let isMouseDown = false;
-            let prevMouseX = 0, prevMouseY = 0;
-
-            window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                const key = e.key ? e.key.toLowerCase() : '';
-                if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
-                if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
-                if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
-                if (key === 'd' || e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
-                if (e.code === 'Space' || key === ' ') {
-                    keys.space = true;
-                    if (player.onGround && !isPlayerSitting) {
-                        player.velocity.y = 0.18;
-                        player.onGround = false;
-                    }
-                }
-            });
-
-            window.addEventListener('keyup', (e) => {
-                const key = e.key ? e.key.toLowerCase() : '';
-                if (key === 'w' || e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
-                if (key === 's' || e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
-                if (key === 'a' || e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
-                if (key === 'd' || e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
-                if (e.code === 'Space' || key === ' ') keys.space = false;
-            });
-
-            const gameContainer = document.getElementById('game-container');
-            
-            gameContainer.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#chat-container') || e.target.closest('#hotbar-container')) {
-                    return;
-                }
-                isMouseDown = true;
-                prevMouseX = e.clientX;
-                prevMouseY = e.clientY;
-
-                if (!isPointerLocked && renderer && renderer.domElement.requestPointerLock) {
-                    renderer.domElement.requestPointerLock();
-                }
-            });
-
-            window.addEventListener('mouseup', () => { isMouseDown = false; });
-
-            document.addEventListener('pointerlockchange', () => {
-                isPointerLocked = (document.pointerLockElement === renderer.domElement);
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (isPointerLocked) {
-                    player.rotation.y -= e.movementX * 0.003;
-                    player.rotation.x -= e.movementY * 0.003;
-                    player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
-                } else if (isMouseDown) {
-                    const dx = e.clientX - prevMouseX;
-                    const dy = e.clientY - prevMouseY;
-                    prevMouseX = e.clientX;
-                    prevMouseY = e.clientY;
-
-                    player.rotation.y -= dx * 0.004;
-                    player.rotation.x -= dy * 0.004;
-                    player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
-                }
-            });
-
-            if (renderer && renderer.domElement) {
-                renderer.domElement.addEventListener('click', (e) => {
-                    if (!targetedBlockInfo) return;
-                    const mesh = targetedBlockInfo.mesh;
-
-                    if (e.button === 0) {
-                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
-                            interactWithBlock(mesh);
-                        } else {
-                            removeBlockMesh(mesh.position.x, mesh.position.y, mesh.position.z);
-                            showToast("Blok Dihancurkan!");
-                        }
-                    }
-                });
-
-                renderer.domElement.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    if (!targetedBlockInfo) return;
-                    const mesh = targetedBlockInfo.mesh;
-                    const normal = targetedBlockInfo.face.normal;
-                    const newX = mesh.position.x + normal.x;
-                    const newY = mesh.position.y + normal.y;
-                    const newZ = mesh.position.z + normal.z;
-
-                    if (selectedItem.type === 'block') {
-                        createBlockMesh(newX, newY, newZ, selectedItem.id);
-                    }
-                });
-            }
-        }
-
-        // --- SETUP KONTROL TOUCH / JOYSTICK MOBILE ---
-        function setupTouchAndControls() {
-            const joystickContainer = document.getElementById('joystick-container');
-            const joystickKnob = document.getElementById('joystick-knob');
-            let joyTouchId = null;
-            let joyCenter = { x: 0, y: 0 };
-
-            joystickContainer.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const touch = e.changedTouches[0];
-                joyTouchId = touch.identifier;
-                const rect = joystickContainer.getBoundingClientRect();
-                joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-            }, { passive: false });
-
-            window.addEventListener('touchmove', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    if (touch.identifier === joyTouchId) {
-                        const dx = touch.clientX - joyCenter.x;
-                        const dy = touch.clientY - joyCenter.y;
-                        const dist = Math.min(Math.hypot(dx, dy), 40);
-                        const angle = Math.atan2(dy, dx);
-
-                        const knobX = Math.cos(angle) * dist;
-                        const knobY = Math.sin(angle) * dist;
-                        joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-
-                        inputState.forward = -Math.sin(angle) * (dist / 40);
-                        inputState.side = Math.cos(angle) * (dist / 40);
-                    } else if (touch.identifier === touchLookId) {
-                        const movementX = touch.clientX - lastTouchX;
-                        const movementY = touch.clientY - lastTouchY;
-                        lastTouchX = touch.clientX;
-                        lastTouchY = touch.clientY;
-
-                        player.rotation.x -= movementY * 0.005;
-                        player.rotation.y -= movementX * 0.005;
-                        player.rotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, player.rotation.x));
-                    }
-                }
-            }, { passive: false });
-
-            const resetJoystick = (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    if (e.changedTouches[i].identifier === joyTouchId) {
-                        joyTouchId = null;
-                        joystickKnob.style.transform = `translate(0px, 0px)`;
-                        inputState.forward = 0;
-                        inputState.side = 0;
-                    } else if (e.changedTouches[i].identifier === touchLookId) {
-                        touchLookId = null;
-                    }
-                }
-            };
-
-            window.addEventListener('touchend', resetJoystick);
-            window.addEventListener('touchcancel', resetJoystick);
-
-            window.addEventListener('touchstart', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const touch = e.changedTouches[i];
-                    if (touch.clientX > window.innerWidth / 2 && touchLookId === null) {
-                        touchLookId = touch.identifier;
-                        lastTouchX = touch.clientX;
-                        lastTouchY = touch.clientY;
-                    }
-                }
-            });
-
-            let touchTimer = null;
-            let touchStartPos = { x: 0, y: 0 };
-
-            window.addEventListener('touchstart', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.closest('#hud-controls') || e.target.closest('#inventory-panel') || e.target.closest('#edu-panel') || e.target.closest('#hotbar-container') || e.target.closest('#joystick-container')) return;
-
-                const touch = e.touches[0];
-                touchStartPos = { x: touch.clientX, y: touch.clientY };
-
-                touchTimer = setTimeout(() => {
-                    if (targetedBlockInfo) {
-                        const p = targetedBlockInfo.mesh.position;
-                        removeBlockMesh(p.x, p.y, p.z);
-                        showToast("Blok Dihancurkan!");
-                    }
-                }, 500);
-            });
-
-            window.addEventListener('touchend', (e) => {
-                if (touchTimer) {
-                    clearTimeout(touchTimer);
-                    const touch = e.changedTouches[0];
-                    const dist = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
-
-                    if (dist < 10 && targetedBlockInfo) {
-                        if (e.target.tagName === 'BUTTON' || e.target.closest('#hotbar-container')) return;
-
-                        const mesh = targetedBlockInfo.mesh;
-                        if (mesh.userData.type === 'bed' || mesh.userData.type === 'chair' || mesh.userData.type === 'tnt') {
-                            interactWithBlock(mesh);
-                        } else {
-                            const normal = targetedBlockInfo.face.normal;
-                            const newX = mesh.position.x + normal.x;
-                            const newY = mesh.position.y + normal.y;
-                            const newZ = mesh.position.z + normal.z;
-
-                            if (selectedItem.type === 'block') {
-                                createBlockMesh(newX, newY, newZ, selectedItem.id);
-                            }
-                        }
-                    }
-                }
-            });
-
-            document.getElementById('btn-jump').addEventListener('click', () => {
-                if (player.onGround && !isPlayerSitting) {
-                    player.velocity.y = 0.15;
-                    player.onGround = false;
-                }
-            });
         }
 
         let currentPixelColor = "#22c55e";
@@ -1345,7 +1074,6 @@
                 cell.addEventListener('pointerdown', () => {
                     currentPixelColor = document.getElementById('custom-color-picker').value;
                     cell.style.backgroundColor = currentPixelColor;
-
                     const x = i % 16;
                     const y = Math.floor(i / 16);
                     pixelCanvasContext.fillStyle = currentPixelColor;
@@ -1355,386 +1083,639 @@
             }
         }
 
+        function applyAutofill(shape) {
+            const color = document.getElementById('custom-color-picker').value;
+            const gridCells = document.querySelectorAll('.pixel-cell');
+            
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    let fill = false;
+                    if (shape === 'top' && y < 8) fill = true;
+                    if (shape === 'bottom' && y >= 8) fill = true;
+                    if (shape === 'left' && x < 8) fill = true;
+                    if (shape === 'right' && x >= 8) fill = true;
+                    if (shape === 'full') fill = true;
+                    if (shape === 'clear') fill = false;
+                    
+                    if (shape === 'clear' || fill) {
+                        const cellColor = shape === 'clear' ? '#22c55e' : color;
+                        const index = y * 16 + x;
+                        if (gridCells[index]) {
+                            gridCells[index].style.backgroundColor = cellColor;
+                        }
+                        pixelCanvasContext.fillStyle = cellColor;
+                        pixelCanvasContext.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            showToast(`Autofill ${shape} berhasil diterapkan!`);
+        }
+
+        function handleBehaviorChange() {
+            const behavior = document.getElementById('custom-behavior-select').value;
+            const visContainer = document.getElementById('viscosity-container');
+            if (behavior === 'liquid') {
+                visContainer.style.display = 'block';
+                updateViscosityLabel();
+            } else {
+                visContainer.style.display = 'none';
+            }
+        }
+
+        function updateViscosityLabel() {
+            const vis = parseInt(document.getElementById('custom-viscosity-slider').value);
+            const flow = 15 - vis;
+            document.getElementById('viscosity-val').innerText = vis;
+            document.getElementById('flow-area-val').innerText = flow;
+        }
+
         function toggleCustomBlockCreator() {
             const creator = document.getElementById('custom-block-creator');
             creator.style.display = creator.style.display === 'block' ? 'none' : 'block';
         }
 
-        function onBehaviorTypeChange() {
-            const val = document.getElementById('custom-behavior-select').value;
-            const vis = document.getElementById('viscosity-container');
-            vis.style.display = val === 'water' ? 'block' : 'none';
-        }
-
-        function updateViscosityLabel() {
-            const val = document.getElementById('custom-viscosity').value;
-            document.getElementById('viscosity-info').innerText = `Aliran Maksimal: ${val} Blok`;
-        }
-
         function saveCustomBlock() {
-            const name = document.getElementById('custom-block-name').value.trim() || "Custom Voxel";
+            const name = document.getElementById('custom-block-name').value.trim() || "Blok Kustom";
             const behavior = document.getElementById('custom-behavior-select').value;
-            const vis = parseInt(document.getElementById('custom-viscosity').value);
+            const viscosity = behavior === 'liquid' ? parseInt(document.getElementById('custom-viscosity-slider').value) : 0;
+            const flowRange = behavior === 'liquid' ? (15 - viscosity) : 0;
             const newId = 900 + Object.keys(customBlocksDatabase).length;
 
             const canvasCopy = document.createElement('canvas');
-            canvasCopy.width = 16;
-            canvasCopy.height = 16;
-            const ctx = canvasCopy.getContext('2d');
-            ctx.drawImage(pixelCanvasContext.canvas, 0, 0);
+            canvasCopy.width = 16; canvasCopy.height = 16;
+            canvasCopy.getContext('2d').drawImage(pixelCanvasContext.canvas, 0, 0);
 
             customBlocksDatabase[newId] = {
                 id: newId,
                 name: name,
                 type: behavior,
-                color: 0xffffff,
+                viscosity: viscosity,
+                flowRange: flowRange,
                 canvas: canvasCopy,
-                viscosity: vis
+                color: 0x3b82f6
             };
 
-            hotbarSelection[activeHotbarIndex] = { type: 'block', id: newId };
-            selectedItem = hotbarSelection[activeHotbarIndex];
-
-            buildHotbarUI();
+            showToast(`Blok "${name}" berhasil disimpan!`);
             buildInventoryUI();
             toggleCustomBlockCreator();
-            toggleInventoryPanel();
-            showToast(`Blok "${name}" Disimpan ke Hotbar!`);
         }
 
-        function toggleInventoryPanel() {
-            const panel = document.getElementById('inventory-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        function toggleDoor(doorGroup) {
+            if (!doorGroup) return;
+            const data = doorGroup.userData;
+            data.isOpen = !data.isOpen;
+
+            // Rotate 90 degrees around Y axis hinge when open
+            if (data.isOpen) {
+                doorGroup.rotation.y = Math.PI / 2;
+                playSound('place');
+                showToast("Pintu dibuka!");
+            } else {
+                doorGroup.rotation.y = 0;
+                playSound('place');
+                showToast("Pintu ditutup!");
+            }
         }
-        document.getElementById('btn-inventory-toggle').addEventListener('click', toggleInventoryPanel);
+
+        function goToSleep() {
+            if (isSleeping) return;
+            isSleeping = true;
+            if (!isMobileMode) document.exitPointerLock();
+            
+            const overlay = document.getElementById('sleep-overlay');
+            overlay.style.opacity = '1';
+            showToast("Sedang tidur... Layar menggelap selama 2 detik...");
+
+            setTimeout(() => {
+                gameTime = Math.PI / 2;
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    isSleeping = false;
+                    if (!isMobileMode && !isSitting) {
+                        renderer.domElement.requestPointerLock().catch(() => {});
+                    }
+                    showToast("Selamat pagi! Waktu diset ke pagi hari.");
+                }, 1000);
+            }, 2000);
+        }
+
+        function sitOnChair(pos) {
+            isSitting = true;
+            sitPosition.copy(pos);
+            sitPosition.y += 0.8;
+            player.position.copy(sitPosition);
+            player.velocity.set(0, 0, 0);
+            document.getElementById('btn-sit').style.display = 'none';
+            document.getElementById('btn-stand').style.display = 'flex';
+            if (!isMobileMode) document.exitPointerLock();
+            showToast("Berhasil duduk di kursi!");
+        }
+
+        function standUp() {
+            if (!isSitting) return;
+            isSitting = false;
+            
+            const forwardOffset = new THREE.Vector3(0, 0, -1.2).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y);
+            player.position.add(forwardOffset);
+            player.position.y += 1.2; 
+            
+            player.velocity.y = 0.18;
+            player.onGround = false;
+            playSound('jump');
+            
+            keysPressed.w = false;
+            keysPressed.s = false;
+            keysPressed.a = false;
+            keysPressed.d = false;
+            keysPressed.shift = false;
+            dpadState.up = false;
+            dpadState.down = false;
+            dpadState.left = false;
+            dpadState.right = false;
+
+            document.getElementById('btn-sit').style.display = 'flex';
+            document.getElementById('btn-stand').style.display = 'none';
+            if (!isMobileMode) renderer.domElement.requestPointerLock().catch(() => {});
+            showToast("Berdiri dan melompat dari kursi!");
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', (e) => {
+                if (e.altKey && e.key.toLowerCase() === 'c') {
+                    e.preventDefault();
+                    toggleChatBox();
+                    return;
+                }
+
+                if (e.key === 'Shift') {
+                    keysPressed.shift = true;
+                }
+
+                if (e.shiftKey && e.key.toLowerCase() === 't' && isSitting) {
+                    standUp();
+                    return;
+                }
+
+                if (e.key >= '1' && e.key <= '9') {
+                    const slotIndex = parseInt(e.key) - 1;
+                    if (slotIndex < hotbarSelection.length) {
+                        activeHotbarIndex = slotIndex;
+                        selectedItem = hotbarSelection[activeHotbarIndex];
+                        buildHotbarUI();
+                    }
+                    return;
+                }
+
+                if (isChatOpen || isInventoryOpen) return;
+
+                const k = e.key.toLowerCase();
+                if (k === 'w' || k === 'arrowup') keysPressed.w = true;
+                if (k === 's' || k === 'arrowdown') keysPressed.s = true;
+                if (k === 'a' || k === 'arrowleft') keysPressed.a = true;
+                if (k === 'd' || k === 'arrowright') keysPressed.d = true;
+                if (e.code === 'Space') jump();
+                if (k === 'e') {
+                    e.preventDefault();
+                    toggleInventory();
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'Shift') {
+                    keysPressed.shift = false;
+                }
+                const k = e.key.toLowerCase();
+                if (k === 'w' || k === 'arrowup') keysPressed.w = false;
+                if (k === 's' || k === 'arrowdown') keysPressed.s = false;
+                if (k === 'a' || k === 'arrowleft') keysPressed.a = false;
+                if (k === 'd' || k === 'arrowright') keysPressed.d = false;
+            });
+
+            if (!isMobileMode) {
+                renderer.domElement.addEventListener('click', () => {
+                    if (!isInventoryOpen && !isChatOpen) {
+                        renderer.domElement.requestPointerLock().catch(() => {});
+                    }
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (document.pointerLockElement === renderer.domElement && !isInventoryOpen && !isChatOpen) {
+                        player.rotation.y -= e.movementX * 0.003;
+                        player.rotation.x -= e.movementY * 0.003;
+                        player.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.rotation.x));
+                    }
+                });
+            }
+
+            function performBreakBlock() {
+                if (isInventoryOpen || isChatOpen) return;
+                const target = targetedBlockInfo || lastValidTargetInfo;
+                if (target && target.mesh) {
+                    const mesh = target.mesh;
+                    const parentRoot = mesh.parent && mesh.parent.isGroup ? mesh.parent : mesh;
+                    let px, py, pz;
+                    if (parentRoot.userData && parentRoot.userData.basePos) {
+                        px = parentRoot.userData.basePos.x;
+                        py = parentRoot.userData.basePos.y;
+                        pz = parentRoot.userData.basePos.z;
+                    } else {
+                        const worldPos = new THREE.Vector3();
+                        parentRoot.getWorldPosition(worldPos);
+                        px = Math.round(worldPos.x);
+                        py = Math.round(worldPos.y);
+                        pz = Math.round(worldPos.z);
+                    }
+                    removeBlockMesh(px, py, pz);
+                    playSound('break');
+                    showToast("Blok/Kursi/Kasur/Pintu Berhasil Dihancurkan!");
+                    targetedBlockInfo = null;
+                    lastValidTargetInfo = null;
+                    highlightBox.visible = false;
+                } else {
+                    showToast("Tidak ada blok yang dibidik!");
+                }
+            }
+
+            function performPlaceBlock() {
+                if (isInventoryOpen || isChatOpen) return;
+                const target = targetedBlockInfo || lastValidTargetInfo;
+                if (target && target.mesh) {
+                    const normal = target.face.normal;
+                    const mesh = target.mesh;
+                    const parentRoot = mesh.parent && mesh.parent.isGroup ? mesh.parent : mesh;
+                    let px, py, pz;
+                    if (parentRoot.userData && parentRoot.userData.basePos) {
+                        px = parentRoot.userData.basePos.x;
+                        py = parentRoot.userData.basePos.y;
+                        pz = parentRoot.userData.basePos.z;
+                    } else {
+                        const worldPos = new THREE.Vector3();
+                        parentRoot.getWorldPosition(worldPos);
+                        px = Math.round(worldPos.x);
+                        py = Math.round(worldPos.y);
+                        pz = Math.round(worldPos.z);
+                    }
+                    createBlockMesh(px + normal.x, py + normal.y, pz + normal.z, selectedItem.id);
+                    playSound('place');
+                    showToast("Blok Dipasang!");
+                } else {
+                    showToast("Arahkan bidikan ke blok!");
+                }
+            }
+
+            renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+            renderer.domElement.addEventListener('click', (e) => {
+                if (isInventoryOpen || isChatOpen) return;
+                if (e.button === 0) {
+                    if (keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh) {
+                        const bId = targetedBlockInfo.mesh.userData.id;
+                        const bData = getBlockData(bId);
+                        const parentRoot = targetedBlockInfo.mesh.parent && targetedBlockInfo.mesh.parent.isGroup ? targetedBlockInfo.mesh.parent : targetedBlockInfo.mesh;
+                        const groupPos = new THREE.Vector3();
+                        parentRoot.getWorldPosition(groupPos);
+
+                        if (bId === 5 || bData.type === 'chair') {
+                            sitOnChair(groupPos);
+                            return;
+                        }
+                        if (bId === 4 || bData.type === 'bed') {
+                            goToSleep();
+                            return;
+                        }
+                        if (bId === 11 || bData.type === 'door') {
+                            toggleDoor(parentRoot);
+                            return;
+                        }
+                    }
+                    performBreakBlock();
+                }
+            });
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                if (isInventoryOpen || isChatOpen) return;
+                if (e.button === 2) {
+                    e.preventDefault();
+                    performPlaceBlock();
+                }
+            });
+
+            document.getElementById('btn-break-block').addEventListener('click', (e) => { e.stopPropagation(); performBreakBlock(); });
+            document.getElementById('btn-place-block').addEventListener('click', (e) => { e.stopPropagation(); performPlaceBlock(); });
+            
+            document.getElementById('btn-sit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const target = targetedBlockInfo || lastValidTargetInfo;
+                if (target && target.mesh) {
+                    const bId = target.mesh.userData.id;
+                    const bData = getBlockData(bId);
+                    const parentRoot = target.mesh.parent && target.mesh.parent.isGroup ? target.mesh.parent : target.mesh;
+                    const groupPos = new THREE.Vector3();
+                    parentRoot.getWorldPosition(groupPos);
+
+                    if (bId === 5 || bData.type === 'chair') {
+                        sitOnChair(groupPos);
+                    } else {
+                        showToast("Bukan kursi kayu!");
+                    }
+                }
+            });
+
+            document.getElementById('btn-door').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const target = targetedBlockInfo || lastValidTargetInfo;
+                if (target && target.mesh) {
+                    const bId = target.mesh.userData.id;
+                    const bData = getBlockData(bId);
+                    const parentRoot = target.mesh.parent && target.mesh.parent.isGroup ? target.mesh.parent : target.mesh;
+
+                    if (bId === 11 || bData.type === 'door') {
+                        toggleDoor(parentRoot);
+                    } else {
+                        showToast("Bukan pintu kayu!");
+                    }
+                }
+            });
+
+            document.getElementById('btn-stand').addEventListener('click', (e) => { e.stopPropagation(); standUp(); });
+
+            const bindDpad = (id, key) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); dpadState[key] = true; });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); dpadState[key] = false; });
+                el.addEventListener('mousedown', () => { dpadState[key] = true; });
+                el.addEventListener('mouseup', () => { dpadState[key] = false; });
+            };
+            bindDpad('dpad-up', 'up');
+            bindDpad('dpad-down', 'down');
+            bindDpad('dpad-left', 'left');
+            bindDpad('dpad-right', 'right');
+
+            document.getElementById('btn-jump').addEventListener('click', jump);
+            document.getElementById('btn-inventory-toggle').addEventListener('click', toggleInventory);
+
+            document.getElementById('btn-save-world').addEventListener('click', () => {
+                const saveData = [];
+                for (const key in voxelMap) {
+                    saveData.push({ pos: key, id: voxelMap[key].userData.id });
+                }
+                localStorage.setItem('minecraft_pe_save', JSON.stringify(saveData));
+                showToast("Dunia berhasil disimpan!");
+            });
+
+            document.getElementById('btn-load-world').addEventListener('click', () => {
+                const raw = localStorage.getItem('minecraft_pe_save');
+                if (!raw) {
+                    showToast("Tidak ada data simpanan ditemukan!");
+                    return;
+                }
+                try {
+                    const saveData = JSON.parse(raw);
+                    for (const key in voxelMap) {
+                        const obj = voxelMap[key];
+                        scene.remove(obj);
+                        if (obj.isGroup) obj.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+                    }
+                    blocksGroup = [];
+                    voxelMap = {};
+                    saveData.forEach(item => {
+                        const coords = item.pos.split(',').map(Number);
+                        createBlockMesh(coords[0], coords[1], coords[2], item.id);
+                    });
+                    showToast("Dunia berhasil dimuat!");
+                } catch(err) {
+                    showToast("Gagal memuat dunia!");
+                }
+            });
+        }
+
+        function removeBlockMesh(x, y, z) {
+            const key = `${x},${y},${z}`;
+            let targetObj = voxelMap[key];
+            
+            if (!targetObj) {
+                for (let k in voxelMap) {
+                    const pos = k.split(',').map(Number);
+                    if (pos[0] === x && pos[1] === y && pos[2] === z) {
+                        targetObj = voxelMap[k];
+                        break;
+                    }
+                }
+            }
+
+            if (targetObj) {
+                for (let k in voxelMap) {
+                    if (voxelMap[k] === targetObj) {
+                        delete voxelMap[k];
+                    }
+                }
+                scene.remove(targetObj);
+                if (targetObj.isGroup) {
+                    targetObj.traverse(child => {
+                        blocksGroup = blocksGroup.filter(b => b !== child);
+                        if (child.geometry) child.geometry.dispose();
+                    });
+                } else {
+                    blocksGroup = blocksGroup.filter(b => b !== targetObj);
+                    if (targetObj.geometry) targetObj.geometry.dispose();
+                }
+            }
+        }
+
+        function jump() {
+            if (player.onGround && !isInventoryOpen && !isChatOpen && !isSitting) {
+                player.velocity.y = 0.18;
+                player.onGround = false;
+                playSound('jump');
+            }
+        }
+
+        function toggleInventory() {
+            isInventoryOpen = !isInventoryOpen;
+            const panel = document.getElementById('inventory-panel');
+            panel.style.display = isInventoryOpen ? 'block' : 'none';
+            if (isInventoryOpen) {
+                if (!isMobileMode) document.exitPointerLock();
+            } else {
+                if (!isMobileMode && !isSitting) renderer.domElement.requestPointerLock().catch(() => {});
+            }
+        }
+
+        function toggleChatBox() {
+            isChatOpen = !isChatOpen;
+            const chat = document.getElementById('chat-container');
+            chat.style.display = isChatOpen ? 'flex' : 'none';
+            if (isChatOpen) {
+                if (!isMobileMode) document.exitPointerLock();
+                document.getElementById('chat-input').focus();
+            } else {
+                if (!isMobileMode && !isSitting) renderer.domElement.requestPointerLock().catch(() => {});
+            }
+        }
+
+        document.getElementById('chat-send').addEventListener('click', () => {
+            const input = document.getElementById('chat-input');
+            const txt = input.value.trim();
+            if (txt) {
+                const box = document.getElementById('chat-messages');
+                box.innerHTML += `<div class="chat-msg"><span class="chat-user">${myUsername}:</span> ${txt}</div>`;
+                box.scrollTop = box.scrollHeight;
+                input.value = '';
+            }
+            toggleChatBox();
+        });
 
         function buildHotbarUI() {
             const container = document.getElementById('hotbar-container');
             container.innerHTML = '';
-
             hotbarSelection.forEach((slot, idx) => {
-                const bData = getBlockData(slot.id);
-                const slotDiv = document.createElement('div');
-                slotDiv.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
-
-                const box = document.createElement('div');
-                box.className = 'slot-color-box';
-                box.style.backgroundColor = '#' + (bData.color || 0x5c9e32).toString(16).padStart(6, '0');
-
-                const nameDiv = document.createElement('div');
-                nameDiv.className = 'slot-name';
-                nameDiv.innerText = bData.name.substring(0, 8);
-
-                slotDiv.appendChild(box);
-                slotDiv.appendChild(nameDiv);
-
-                slotDiv.addEventListener('click', () => {
-                    activeHotbarIndex = idx;
-                    selectedItem = slot;
-                    buildHotbarUI();
-                });
-
-                container.appendChild(slotDiv);
+                const b = getBlockData(slot.id);
+                const div = document.createElement('div');
+                div.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
+                div.innerHTML = `<div class="slot-color-box" style="background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}"></div><div class="slot-name">${b.name.substring(0,7)}</div>`;
+                div.onclick = () => { activeHotbarIndex = idx; selectedItem = slot; buildHotbarUI(); };
+                container.appendChild(div);
             });
         }
 
         function buildInventoryUI() {
-            const container = document.getElementById('inv-items-list');
-            container.innerHTML = '';
-
-            const allBlocks = [...minecraftBlocks, ...Object.values(customBlocksDatabase)];
-            allBlocks.forEach(b => {
+            const grid = document.getElementById('inv-items-list');
+            grid.innerHTML = '';
+            [...minecraftBlocks, ...Object.values(customBlocksDatabase)].forEach(b => {
                 const card = document.createElement('div');
                 card.className = 'inv-item-card';
-
-                const prev = document.createElement('div');
-                prev.className = 'inv-item-preview';
-                prev.style.backgroundColor = '#' + (b.color || 0x2ecc71).toString(16).padStart(6, '0');
-
-                const name = document.createElement('div');
-                name.className = 'inv-item-name';
-                name.innerText = b.name;
-
-                card.appendChild(prev);
-                card.appendChild(name);
-
-                card.addEventListener('click', () => {
+                card.innerHTML = `<div class="inv-item-preview" style="background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}"></div><div class="inv-item-name">${b.name}</div>`;
+                card.onclick = () => {
                     hotbarSelection[activeHotbarIndex] = { type: 'block', id: b.id };
                     selectedItem = hotbarSelection[activeHotbarIndex];
                     buildHotbarUI();
-                    showToast(`Slot ${activeHotbarIndex + 1} Diubah: ${b.name}`);
-                });
-
-                container.appendChild(card);
+                    toggleInventory();
+                };
+                grid.appendChild(card);
             });
-        }
-
-        let currentP = 1, currentE = 1, currentN = 0;
-
-        function toggleEduPanel() {
-            const panel = document.getElementById('edu-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-        document.getElementById('btn-edu').addEventListener('click', toggleEduPanel);
-
-        function adjustParticle(type, val) {
-            if (type === 'p') currentP = Math.max(1, Math.min(118, currentP + val));
-            if (type === 'e') currentE = Math.max(1, Math.min(118, currentE + val));
-            if (type === 'n') currentN = Math.max(0, Math.min(150, currentN + val));
-
-            document.getElementById('proton-val').innerText = currentP;
-            document.getElementById('electron-val').innerText = currentE;
-            document.getElementById('neutron-val').innerText = currentN;
-
-            const elem = elementDatabase[currentP] || { symbol: `Un_${currentP}`, name: `Elemen ke-${currentP}` };
-            document.getElementById('element-big-symbol').innerText = elem.symbol;
-            document.getElementById('element-big-name').innerText = elem.name;
-        }
-
-        function claimCreatedElement() {
-            const elem = elementDatabase[currentP] || { symbol: `Un_${currentP}`, name: `Elemen ke-${currentP}` };
-            showToast(`Sintesis Berhasil: ${elem.name} (${elem.symbol})!`);
-            toggleEduPanel();
-        }
-
-        // --- FUNGSI CLOUD INTEGRASI SUPABASE ---
-        async function saveBlockToSupabase(x, y, z, blockId) {
-            if (!supabaseClient) return;
-            try {
-                await supabaseClient.from('world_blocks').upsert([
-                    { x: Math.round(x), y: Math.round(y), z: Math.round(z), block_type: String(blockId) }
-                ]);
-            } catch (err) {
-                console.error("Gagal menyimpan ke Supabase:", err);
-            }
-        }
-
-        async function removeBlockFromSupabase(x, y, z) {
-            if (!supabaseClient) return;
-            try {
-                await supabaseClient.from('world_blocks')
-                    .delete()
-                    .eq('x', Math.round(x))
-                    .eq('y', Math.round(y))
-                    .eq('z', Math.round(z));
-            } catch (err) {
-                console.error("Gagal menghapus dari Supabase:", err);
-            }
-        }
-
-        async function loadWorldFromSupabase() {
-            if (!supabaseClient) return;
-            try {
-                const { data, error } = await supabaseClient.from('world_blocks').select('*');
-                if (error) {
-                    console.error("Gagal memuat dari Supabase:", error);
-                    return;
-                }
-                if (data && data.length > 0) {
-                    data.forEach(b => {
-                        createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
-                    });
-                    showToast(`Dimuat ${data.length} blok dari Supabase Cloud!`);
-                }
-            } catch(e) {
-                console.warn("Gagal terhubung dengan database cloud:", e);
-            }
-        }
-
-        function initSupabaseOnline() {
-            if (!supabaseClient) {
-                console.log("Supabase belum terhubung, berjalan dalam mode lokal.");
-                return;
-            }
-
-            loadWorldFromSupabase();
-
-            try {
-                supabaseClient
-                    .channel('public:world_blocks')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'world_blocks' }, payload => {
-                        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                            const b = payload.new;
-                            createBlockMesh(b.x, b.y, b.z, parseInt(b.block_type) || 1, null, false);
-                        } else if (payload.eventType === 'DELETE') {
-                            const b = payload.old;
-                            if (b && b.x !== undefined) {
-                                removeBlockMesh(b.x, b.y, b.z, false);
-                            }
-                        }
-                    })
-                    .subscribe();
-            } catch(e) {
-                console.warn("Realtime channel gagal diinisialisasi:", e);
-            }
-        }
-
-        document.getElementById('btn-mode-toggle').addEventListener('click', () => {
-            const btn = document.getElementById('btn-mode-toggle');
-            const modeDisp = document.getElementById('mode-display');
-            const healthContainer = document.getElementById('health-container');
-
-            if (currentGamemode === "Creative") {
-                currentGamemode = "Survival";
-                btn.innerText = "MODE: SURVIVAL";
-                modeDisp.innerText = "Mode: Survival";
-                healthContainer.style.display = "flex";
-                showToast("Beralih ke Mode Survival!");
-            } else {
-                currentGamemode = "Creative";
-                btn.innerText = "MODE: KREATIF";
-                modeDisp.innerText = "Mode: Kreatif";
-                healthContainer.style.display = "none";
-                showToast("Beralih ke Mode Kreatif!");
-            }
-        });
-
-        document.getElementById('btn-save-world').addEventListener('click', () => {
-            const saveData = [];
-            Object.keys(voxelMap).forEach(key => {
-                const b = voxelMap[key];
-                saveData.push({
-                    x: b.position.x,
-                    y: b.position.y,
-                    z: b.position.z,
-                    id: b.userData.id
-                });
-            });
-            localStorage.setItem('minecraft_pe_save', JSON.stringify(saveData));
-            showToast("Dunia Berhasil Disimpan di Penyimpanan Lokal!");
-        });
-
-        document.getElementById('btn-load-world').addEventListener('click', () => {
-            const dataStr = localStorage.getItem('minecraft_pe_save');
-            if (!dataStr) {
-                showToast("Tidak ada data simpanan ditemukan!");
-                return;
-            }
-            const saveData = JSON.parse(dataStr);
-
-            Object.keys(voxelMap).forEach(key => {
-                const b = voxelMap[key];
-                scene.remove(b);
-            });
-            blocksGroup = [];
-            voxelMap = {};
-
-            saveData.forEach(item => {
-                createBlockMesh(item.x, item.y, item.z, item.id, null, false);
-            });
-            showToast("Dunia Berhasil Dimuat Kembali!");
-        });
-
-        document.getElementById('btn-chat-toggle').addEventListener('click', () => {
-            const chat = document.getElementById('chat-container');
-            const btn = document.getElementById('btn-chat-toggle');
-            if (chat.style.display === 'none') {
-                chat.style.display = 'flex';
-                btn.innerText = "CHAT: TAMPIL";
-            } else {
-                chat.style.display = 'none';
-                btn.innerText = "CHAT: SEMBUNYI";
-            }
-        });
-
-        document.getElementById('chat-send').addEventListener('click', sendChatMessage);
-        function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            const box = document.getElementById('chat-messages');
-            const msg = document.createElement('div');
-            msg.className = 'chat-msg';
-            msg.innerHTML = `<span class="chat-user">${myUsername}:</span> ${text}`;
-            box.appendChild(msg);
-            box.scrollTop = box.scrollHeight;
-            input.value = '';
-        }
-
-        function onWindowResize() {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
-            if (!clock || !scene || !camera || !renderer) return;
+            gameTime += 0.0005;
+            const cycle = Math.sin(gameTime);
+            let skyColor, timeStr;
+            if (cycle > 0.2) {
+                skyColor = new THREE.Color(0x87ceeb);
+                timeStr = "Pagi / Siang";
+            } else if (cycle < -0.2) {
+                skyColor = new THREE.Color(0x0c141f);
+                timeStr = "Malam";
+            } else {
+                skyColor = new THREE.Color(0xd97757);
+                timeStr = "Sore / Senja";
+            }
+            scene.background.lerp(skyColor, 0.05);
+            scene.fog.color.lerp(skyColor, 0.05);
+            document.getElementById('time-display').innerText = `Waktu: ${timeStr}`;
 
-            const delta = clock.getDelta();
+            mobsList.forEach(mob => {
+                mob.angle += 0.01;
+                mob.mesh.position.x += Math.cos(mob.angle) * mob.speed;
+                mob.mesh.position.z += Math.sin(mob.angle) * mob.speed;
+                mob.mesh.rotation.y = -mob.angle;
+            });
 
-            if (!isPlayerSitting) {
-                let forwardInput = inputState.forward;
-                let sideInput = inputState.side;
+            if (!isInventoryOpen && !isChatOpen && !isSleeping) {
+                const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
+                const dirY = Math.sin(player.rotation.x);
+                const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
+                camera.lookAt(player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ)));
 
-                if (keys.w) forwardInput += 1;
-                if (keys.s) forwardInput -= 1;
-                if (keys.d) sideInput += 1;
-                if (keys.a) sideInput -= 1;
+                if (isSitting) {
+                    player.position.copy(sitPosition);
+                } else {
+                    let forward = 0, side = 0;
+                    if (keysPressed.w || dpadState.up) forward += player.speed;
+                    if (keysPressed.s || dpadState.down) forward -= player.speed;
+                    if (keysPressed.a || dpadState.left) side -= player.speed;
+                    if (keysPressed.d || dpadState.right) side += player.speed;
 
-                forwardInput = Math.max(-1, Math.min(1, forwardInput));
-                sideInput = Math.max(-1, Math.min(1, sideInput));
+                    if (forward !== 0 || side !== 0) {
+                        const fVec = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(forward);
+                        const sVec = new THREE.Vector3(-Math.cos(player.rotation.y), 0, Math.sin(player.rotation.y)).multiplyScalar(side);
 
-                const moveSpeed = player.speed;
-                const frontVector = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).multiplyScalar(forwardInput * moveSpeed);
-                const sideVector = new THREE.Vector3(Math.cos(player.rotation.y), 0, -Math.sin(player.rotation.y)).multiplyScalar(sideInput * moveSpeed);
+                        player.position.x += fVec.x + sVec.x;
+                        if (checkCollision(player.position)) player.position.x -= (fVec.x + sVec.x);
+                        player.position.z += fVec.z + sVec.z;
+                        if (checkCollision(player.position)) player.position.z -= (fVec.z + sVec.z);
+                    }
 
-                player.position.add(frontVector).add(sideVector);
+                    player.velocity.y -= 0.008;
+                    player.position.y += player.velocity.y;
 
-                player.velocity.y -= 0.008;
-                player.position.y += player.velocity.y;
+                    player.onGround = false;
+                    if (checkCollision(player.position)) {
+                        if (player.velocity.y < 0) {
+                            player.position.y -= player.velocity.y;
+                            player.position.y = Math.floor(player.position.y - 1.6) + 1.6 + 0.001;
+                            player.velocity.y = 0;
+                            player.onGround = true;
+                        } else if (player.velocity.y > 0) {
+                            player.position.y -= player.velocity.y;
+                            player.velocity.y = 0;
+                        }
+                    }
 
-                const pX = Math.round(player.position.x);
-                const pZ = Math.round(player.position.z);
-                let highestGroundY = -10;
-
-                for (let checkY = Math.floor(player.position.y + 1); checkY >= Math.floor(player.position.y - 4); checkY--) {
-                    const blockKey = `${pX},${checkY},${pZ}`;
-                    if (voxelMap[blockKey]) {
-                        highestGroundY = checkY + 0.5 + player.height;
-                        break;
+                    if (player.position.y < -25) {
+                        player.position.set(0, 10, 0);
+                        player.velocity.set(0, 0, 0);
                     }
                 }
 
-                if (highestGroundY === -10) highestGroundY = player.height;
-
-                if (player.position.y <= highestGroundY) {
-                    player.position.y = highestGroundY;
-                    player.velocity.y = 0;
-                    player.onGround = true;
-                }
-
-                const dirX = Math.sin(player.rotation.y) * Math.cos(player.rotation.x);
-                const dirY = Math.sin(player.rotation.x);
-                const dirZ = Math.cos(player.rotation.y) * Math.cos(player.rotation.x);
-                const lookTarget = player.position.clone().add(new THREE.Vector3(dirX, dirY, dirZ));
-                
                 camera.position.copy(player.position);
-                camera.lookAt(lookTarget);
             }
 
             raycaster.setFromCamera(mouseCenter, camera);
-            const intersects = raycaster.intersectObjects(blocksGroup);
-
+            const intersects = raycaster.intersectObjects(blocksGroup, false);
             if (intersects.length > 0) {
                 targetedBlockInfo = intersects[0];
-                const mesh = targetedBlockInfo.mesh;
-                highlightBox.position.copy(mesh.position);
-                highlightBox.visible = true;
+                if (targetedBlockInfo && targetedBlockInfo.object) {
+                    targetedBlockInfo.mesh = targetedBlockInfo.object;
+                    lastValidTargetInfo = targetedBlockInfo;
+                    
+                    const parentRoot = targetedBlockInfo.mesh.parent && targetedBlockInfo.mesh.parent.isGroup ? targetedBlockInfo.mesh.parent : targetedBlockInfo.mesh;
+                    const highlightPos = new THREE.Vector3();
+                    parentRoot.getWorldPosition(highlightPos);
+                    highlightBox.position.copy(highlightPos);
+                    highlightBox.visible = true;
+                    
+                    const bId = targetedBlockInfo.mesh.userData.id;
+                    const bData = getBlockData(bId);
+                    document.getElementById('block-focused').innerText = `Membidik: ${bData ? bData.name : bId}`;
 
-                const bName = getBlockData(mesh.userData.id).name;
-                document.getElementById('block-focused').innerText = `Membidik: ${bName} (${mesh.position.x}, ${mesh.position.y}, ${mesh.position.z})`;
+                    if (bId === 5 || bData.type === 'chair') {
+                        document.getElementById('btn-sit').style.display = isSitting ? 'none' : 'flex';
+                        document.getElementById('btn-sleep').style.display = 'none';
+                        document.getElementById('btn-door').style.display = 'none';
+                    } else if (bId === 4 || bData.type === 'bed') {
+                        document.getElementById('btn-sleep').style.display = 'flex';
+                        document.getElementById('btn-sit').style.display = 'none';
+                        document.getElementById('btn-door').style.display = 'none';
+                    } else if (bId === 11 || bData.type === 'door') {
+                        document.getElementById('btn-door').style.display = 'flex';
+                        document.getElementById('btn-sit').style.display = 'none';
+                        document.getElementById('btn-sleep').style.display = 'none';
+                    } else {
+                        document.getElementById('btn-sit').style.display = 'none';
+                        document.getElementById('btn-sleep').style.display = 'none';
+                        document.getElementById('btn-door').style.display = 'none';
+                    }
+                }
             } else {
                 targetedBlockInfo = null;
                 highlightBox.visible = false;
                 document.getElementById('block-focused').innerText = `Membidik: -`;
+                document.getElementById('btn-sit').style.display = 'none';
+                document.getElementById('btn-sleep').style.display = 'none';
+                document.getElementById('btn-door').style.display = 'none';
             }
-
-            document.getElementById('coords-display').innerText = `Posisi: X:${Math.round(player.position.x)} Y:${Math.round(player.position.y)} Z:${Math.round(player.position.z)}`;
 
             renderer.render(scene, camera);
         }
