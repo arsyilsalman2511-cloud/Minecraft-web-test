@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft PE Hybrid Edition - Multi-World Cloud Sync</title>
+    <title>Minecraft PE Hybrid Edition - File Import/Export Edition</title>
     <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Blockly Library for Scratch-style visual block programming -->
     <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-    <!-- Firebase Engine for Realtime Cloud Sync across players -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -42,7 +38,7 @@
             touch-action: none;
         }
 
-        /* Lobi Utama Sesuai Sketsa */
+        /* Lobi Utama */
         #lobby-container {
             position: absolute;
             top: 0;
@@ -133,39 +129,6 @@
         .lobby-btn:active {
             transform: translateY(2px);
             box-shadow: none;
-        }
-        
-        .world-list-box {
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 6px;
-            padding: 8px;
-            margin-top: 8px;
-            max-height: 120px;
-            overflow-y: auto;
-            text-align: left;
-        }
-        .world-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 8px;
-            background: #1e293b;
-            border: 1px solid #475569;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            font-size: 9px;
-            cursor: pointer;
-        }
-        .world-item:hover {
-            background: #2563eb;
-            border-color: #60a5fa;
-        }
-        .world-url-sim {
-            font-size: 7px;
-            color: #94a3b8;
-            margin-top: 2px;
-            word-break: break-all;
         }
 
         /* Crosshair */
@@ -551,6 +514,65 @@
             transition: opacity 1s ease;
         }
 
+        /* --- PANEL SETTINGS (IMPORT / EXPORT MODAL) --- */
+        #settings-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 360px;
+            max-width: 90vw;
+            background: #1e293b;
+            border: 4px solid #3b82f6;
+            border-radius: 12px;
+            z-index: 400;
+            color: white;
+            padding: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            text-align: center;
+        }
+        #settings-modal h2 {
+            margin-top: 0;
+            color: #60a5fa;
+            font-size: 16px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .settings-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 18px 0;
+        }
+        .settings-action-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            font-family: monospace;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            text-shadow: 1px 1px 0 #000;
+        }
+        .settings-action-btn:active {
+            transform: translateY(2px);
+        }
+        #btn-export-js {
+            background: #2ecc71;
+            color: white;
+        }
+        #btn-import-js {
+            background: #e67e22;
+            color: white;
+        }
+
         /* --- PANEL SCRATCH BLOCK EDITOR (GOOGLE BLOCKLY) --- */
         #robot-code-panel {
             display: none;
@@ -617,8 +639,8 @@
 
     <div id="lobby-container">
         <div class="lobby-card">
-            <h1>MENU MULAI (DUNIA SINKRON)</h1>
-            <p>SINKRONISASI DUNIA ANTAR PEMAIN (CLOUD SYNC)</p>
+            <h1>MENU MULAI (IMPORT / EXPORT JS)</h1>
+            <p>BAGIKAN DUNIA & CUSTOM BLOCK DENGAN FILE .JS</p>
             
             <label class="lobby-field-label">NAMA DUNIA:</label>
             <input type="text" id="world-name-input" class="lobby-input" value="Dunia A" placeholder="Misal: Dunia A">
@@ -635,13 +657,6 @@
             </label>
 
             <button id="btn-enter-game" class="lobby-btn">MASUK / BUAT DUNIA</button>
-
-            <div style="font-size:9px; color:#94a3b8; margin-top:12px; text-align:left; border-top:1px dashed #475569; padding-top:6px;">
-                <strong>DAFTAR DUNIA PUBLIK TERSIMPAN:</strong>
-            </div>
-            <div class="world-list-box" id="saved-worlds-list">
-                <!-- Daftar dunia akan diisi otomatis -->
-            </div>
         </div>
     </div>
 
@@ -661,8 +676,7 @@
 
         <div id="hud-controls">
             <button class="hud-btn" id="btn-inventory-toggle">INVENTORY (E)</button>
-            <button class="hud-btn" id="btn-save-world">SIMPAN KE CLOUD</button>
-            <button class="hud-btn" id="btn-load-world">MUAT CLOUD</button>
+            <button class="hud-btn" id="btn-open-settings" style="background:#3b82f6;">SETTINGS (ESC)</button>
         </div>
 
         <div id="action-buttons-container">
@@ -759,6 +773,26 @@
             <button class="close-btn" onclick="toggleInventory()">TUTUP (E)</button>
         </div>
 
+        <!-- PANEL SETTINGS (IMPORT & EXPORT FILE .JS) -->
+        <div id="settings-modal">
+            <h2>PENGATURAN DUNIA</h2>
+            <p style="font-size:9px; color:#94a3b8; margin-top:2px;">Import & Export peta serta custom block menggunakan file .JS</p>
+            
+            <div class="settings-btn-group">
+                <button id="btn-export-js" class="settings-action-btn" onclick="exportWorldToJsFile()">
+                    📥 EXPORT DUNIA (.JS)
+                </button>
+                <button id="btn-import-js" class="settings-action-btn" onclick="triggerImportJsFile()">
+                    📤 IMPORT DUNIA (.JS)
+                </button>
+            </div>
+
+            <!-- Hidden File Input untuk Import -->
+            <input type="file" id="input-import-file" accept=".js" style="display: none;" onchange="handleJsFileImport(event)">
+
+            <button class="close-btn" onclick="toggleSettingsModal(false)" style="background:#64748b;">TUTUP (ESC)</button>
+        </div>
+
         <!-- PANEL EDITOR KODE ROBOT SCRATCH (BLOCKLY VISUAL CANVAS) -->
         <div id="robot-code-panel">
             <div class="code-panel-header">
@@ -804,33 +838,6 @@
     </div>
 
     <script>
-        // Inisialisasi Firebase Firestore untuk Realtime Cloud World Sync
-        let db = null;
-        let auth = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'minecraft-world-test';
-
-        function initCloudSync() {
-            try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(firebaseConfig);
-                    }
-                    db = firebase.firestore();
-                    auth = firebase.auth();
-                    
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        auth.signInWithCustomToken(__initial_auth_token).catch(() => auth.signInAnonymously());
-                    } else {
-                        auth.signInAnonymously();
-                    }
-                }
-            } catch(e) {
-                console.log("Firebase fallback to LocalStorage", e);
-            }
-        }
-        initCloudSync();
-
         // Data Blok Minecraft
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
@@ -870,6 +877,7 @@
 
         let isSitting = false;
         let isSleeping = false;
+        let isSettingsOpen = false;
         let sitPosition = new THREE.Vector3();
 
         let audioCtx = null;
@@ -997,35 +1005,6 @@
             setTimeout(() => { t.style.display = 'none'; }, 2500);
         }
 
-        // Render Daftar Dunia Tersimpan di Lobi
-        function renderSavedWorldsList() {
-            const container = document.getElementById('saved-worlds-list');
-            container.innerHTML = '';
-            
-            const defaultWorlds = ["Dunia A", "Dunia B", "Dunia Kreatif"];
-            const localSaved = JSON.parse(localStorage.getItem('minecraft_saved_world_names') || '[]');
-            const allWorlds = Array.from(new Set([...defaultWorlds, ...localSaved]));
-
-            allWorlds.forEach(wName => {
-                const item = document.createElement('div');
-                item.className = 'world-item';
-                const safeUrl = `arsyilsalman219-cloud.github.io/minecraft-web-test/${encodeURIComponent(wName)}`;
-                item.innerHTML = `
-                    <div>
-                        <strong style="color:#60a5fa;">🌍 ${wName}</strong>
-                        <div class="world-url-sim">${safeUrl}</div>
-                    </div>
-                    <button class="hud-btn" style="background:#2ecc71; font-size:8px;">MASUK</button>
-                `;
-                item.onclick = () => {
-                    document.getElementById('world-name-input').value = wName;
-                    enterGameWorld();
-                };
-                container.appendChild(item);
-            });
-        }
-        renderSavedWorldsList();
-
         function enterGameWorld() {
             currentWorldName = document.getElementById('world-name-input').value.trim() || "Dunia A";
             myUsername = document.getElementById('username-input').value.trim() || "Steve";
@@ -1034,13 +1013,6 @@
             const seedStr = document.getElementById('seed-input').value.trim() || "999";
             numericSeed = 0;
             for (let i = 0; i < seedStr.length; i++) numericSeed += seedStr.charCodeAt(i);
-
-            // Simpan nama dunia ke daftar tersimpan
-            const localSaved = JSON.parse(localStorage.getItem('minecraft_saved_world_names') || '[]');
-            if (!localSaved.includes(currentWorldName)) {
-                localSaved.push(currentWorldName);
-                localStorage.setItem('minecraft_saved_world_names', JSON.stringify(localSaved));
-            }
 
             document.getElementById('world-display').innerText = `Dunia: ${currentWorldName}`;
             document.getElementById('seed-display').innerText = `Seed: ${seedStr}`;
@@ -1062,9 +1034,6 @@
             initBlocklyWorkspace();
             setupInputListeners();
             setupMobileTouchLook();
-            
-            // Coba Muat Otomatis dari Firestore Cloud jika ada
-            loadWorldFromCloudOrLocal();
 
             animate();
         }
@@ -1497,6 +1466,7 @@
                 type: behavior,
                 viscosity: viscosity,
                 flowRange: flowRange,
+                canvasDataUrl: canvasCopy.toDataURL(),
                 canvas: canvasCopy,
                 color: 0x3b82f6
             };
@@ -1506,89 +1476,154 @@
             toggleCustomBlockCreator();
         }
 
-        // --- REALTIME CLOUD / MULTI-WORLD SYNC LOGIC ---
-        function saveWorldToCloudOrLocal() {
-            const saveData = [];
-            for (const key in voxelMap) {
-                saveData.push({ pos: key, id: voxelMap[key].userData.id });
+        // --- SISTEM SETTINGS MODAL & IMPORT / EXPORT FILE .JS ---
+        function toggleSettingsModal(show) {
+            if (show === undefined) {
+                isSettingsOpen = !isSettingsOpen;
+            } else {
+                isSettingsOpen = show;
             }
 
-            const cleanName = encodeURIComponent(currentWorldName);
-            
-            // Simpan ke LocalStorage sebagai Fallback
-            localStorage.setItem(`minecraft_world_${cleanName}`, JSON.stringify(saveData));
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = isSettingsOpen ? 'block' : 'none';
 
-            // Simpan ke Firestore jika terhubung
-            if (db) {
-                try {
-                    const worldDocRef = db.doc(`artifacts/${appId}/public/data/worlds/${cleanName}`);
-                    worldDocRef.set({
-                        worldName: currentWorldName,
-                        lastUpdatedBy: myUsername,
-                        seed: numericSeed,
-                        blocks: JSON.stringify(saveData),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(() => {
-                        showToast(`Dunia "${currentWorldName}" Berhasil Disimpan ke Cloud!`);
-                    }).catch(err => {
-                        showToast(`Disimpan ke Local: "${currentWorldName}"`);
-                    });
-                } catch(e) {
-                    showToast(`Disimpan ke Local Storage!`);
-                }
+            if (isSettingsOpen) {
+                if (!isMobileMode) document.exitPointerLock();
             } else {
-                showToast(`Disimpan ke Local Storage!`);
+                if (!isMobileMode && !isSitting) renderer.domElement.requestPointerLock().catch(() => {});
             }
         }
 
-        function loadWorldFromCloudOrLocal() {
-            const cleanName = encodeURIComponent(currentWorldName);
+        function exportWorldToJsFile() {
+            const mapData = [];
+            for (const key in voxelMap) {
+                mapData.push({ pos: key, id: voxelMap[key].userData.id });
+            }
 
-            const applySaveData = (saveData) => {
-                for (const key in voxelMap) {
-                    const obj = voxelMap[key];
-                    scene.remove(obj);
-                    if (obj.isGroup) obj.traverse(child => { if (child.geometry) child.geometry.dispose(); });
-                }
-                blocksGroup = [];
-                voxelMap = {};
-                saveData.forEach(item => {
-                    const coords = item.pos.split(',').map(Number);
-                    createBlockMesh(coords[0], coords[1], coords[2], item.id);
+            const exportedCustomBlocks = [];
+            for (const cId in customBlocksDatabase) {
+                const cb = customBlocksDatabase[cId];
+                exportedCustomBlocks.push({
+                    id: cb.id,
+                    name: cb.name,
+                    type: cb.type,
+                    viscosity: cb.viscosity,
+                    flowRange: cb.flowRange,
+                    canvasDataUrl: cb.canvasDataUrl || (cb.canvas ? cb.canvas.toDataURL() : null),
+                    color: cb.color
                 });
+            }
+
+            const worldData = {
+                worldName: currentWorldName,
+                seed: numericSeed,
+                mapData: mapData,
+                customBlocks: exportedCustomBlocks
             };
 
-            if (db) {
+            const jsContent = `window.importedWorldData = ${JSON.stringify(worldData, null, 2)};`;
+
+            const blob = new Blob([jsContent], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+
+            const safeFileName = currentWorldName.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeFileName}.js`;
+            document.body.appendChild(a);
+            a.click();
+
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast(`Dunia "${currentWorldName}" berhasil diexport ke ${safeFileName}.js!`);
+            toggleSettingsModal(false);
+        }
+
+        function triggerImportJsFile() {
+            document.getElementById('input-import-file').click();
+        }
+
+        function handleJsFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
                 try {
-                    const worldDocRef = db.doc(`artifacts/${appId}/public/data/worlds/${cleanName}`);
-                    worldDocRef.get().then(doc => {
-                        if (doc.exists && doc.data().blocks) {
-                            const saveData = JSON.parse(doc.data().blocks);
-                            applySaveData(saveData);
-                            showToast(`Dunia "${currentWorldName}" Dimuat dari Cloud!`);
-                        } else {
-                            // Coba LocalStorage
-                            const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
-                            if (raw) {
-                                applySaveData(JSON.parse(raw));
-                                showToast(`Dunia "${currentWorldName}" Dimuat dari Penyimpanan Lokal!`);
-                            }
+                    const scriptEvaluator = new Function(content);
+                    scriptEvaluator();
+
+                    if (window.importedWorldData) {
+                        const data = window.importedWorldData;
+
+                        if (data.worldName) {
+                            currentWorldName = data.worldName;
+                            document.getElementById('world-display').innerText = `Dunia: ${currentWorldName}`;
                         }
-                    }).catch(() => {
-                        const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
-                        if (raw) applySaveData(JSON.parse(raw));
-                    });
-                } catch(e) {
-                    const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
-                    if (raw) applySaveData(JSON.parse(raw));
+
+                        // Load Custom Blocks terlebih dahulu
+                        if (data.customBlocks && Array.isArray(data.customBlocks)) {
+                            data.customBlocks.forEach(cb => {
+                                const newCanvas = document.createElement('canvas');
+                                newCanvas.width = 16;
+                                newCanvas.height = 16;
+                                const ctx = newCanvas.getContext('2d');
+
+                                if (cb.canvasDataUrl) {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        ctx.drawImage(img, 0, 0);
+                                        buildInventoryUI();
+                                    };
+                                    img.src = cb.canvasDataUrl;
+                                }
+
+                                customBlocksDatabase[cb.id] = {
+                                    id: cb.id,
+                                    name: cb.name,
+                                    type: cb.type,
+                                    viscosity: cb.viscosity,
+                                    flowRange: cb.flowRange,
+                                    canvasDataUrl: cb.canvasDataUrl,
+                                    canvas: newCanvas,
+                                    color: cb.color || 0x3b82f6
+                                };
+                            });
+                            buildInventoryUI();
+                        }
+
+                        // Load Peta/Map
+                        if (data.mapData && Array.isArray(data.mapData)) {
+                            for (const key in voxelMap) {
+                                const obj = voxelMap[key];
+                                scene.remove(obj);
+                                if (obj.isGroup) obj.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+                            }
+                            blocksGroup = [];
+                            voxelMap = {};
+
+                            data.mapData.forEach(item => {
+                                const coords = item.pos.split(',').map(Number);
+                                createBlockMesh(coords[0], coords[1], coords[2], item.id);
+                            });
+                        }
+
+                        delete window.importedWorldData;
+                        showToast(`Peta "${data.worldName || 'Baru'}" Berhasil Diimport!`);
+                        toggleSettingsModal(false);
+                    } else {
+                        showToast("Format file .JS tidak valid!");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    showToast("Gagal membisa/impor file .JS!");
                 }
-            } else {
-                const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
-                if (raw) {
-                    applySaveData(JSON.parse(raw));
-                    showToast(`Dunia "${currentWorldName}" Dimuat dari Penyimpanan Lokal!`);
-                }
-            }
+            };
+
+            reader.readAsText(file);
+            event.target.value = '';
         }
 
         // --- SISTEM PEMROGRAMAN BALOK VISUAL SCRATCH (GOOGLE BLOCKLY INTEGRATION) ---
@@ -2064,7 +2099,7 @@
             const canvasEl = renderer.domElement;
 
             canvasEl.addEventListener('touchstart', (e) => {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     const touch = e.changedTouches[i];
                     if (touchLookId === null) {
@@ -2077,7 +2112,7 @@
             }, { passive: false });
 
             canvasEl.addEventListener('touchmove', (e) => {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     const touch = e.changedTouches[i];
                     if (touch.identifier === touchLookId) {
@@ -2112,6 +2147,11 @@
 
         function setupInputListeners() {
             window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' || e.code === 'Escape') {
+                    toggleSettingsModal();
+                    return;
+                }
+
                 if (e.altKey && e.key.toLowerCase() === 'c') {
                     e.preventDefault();
                     toggleChatBox();
@@ -2137,7 +2177,7 @@
                     return;
                 }
 
-                if (isChatOpen || isInventoryOpen || isRobotCodeOpen) return;
+                if (isChatOpen || isInventoryOpen || isRobotCodeOpen || isSettingsOpen) return;
 
                 const k = e.key.toLowerCase();
                 if (k === 'w' || k === 'arrowup') keysPressed.w = true;
@@ -2164,13 +2204,13 @@
 
             if (!isMobileMode) {
                 renderer.domElement.addEventListener('click', () => {
-                    if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen) {
+                    if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSettingsOpen) {
                         renderer.domElement.requestPointerLock().catch(() => {});
                     }
                 });
 
                 document.addEventListener('mousemove', (e) => {
-                    if (document.pointerLockElement === renderer.domElement && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen) {
+                    if (document.pointerLockElement === renderer.domElement && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSettingsOpen) {
                         player.rotation.y -= e.movementX * 0.003;
                         player.rotation.x -= e.movementY * 0.003;
                         player.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.rotation.x));
@@ -2179,7 +2219,7 @@
             }
 
             function performBreakBlock() {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const mesh = target.mesh;
@@ -2212,7 +2252,7 @@
             }
 
             function performPlaceBlock() {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const normal = target.face.normal;
@@ -2240,7 +2280,7 @@
 
             renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
             renderer.domElement.addEventListener('click', (e) => {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
 
                 if (e.button === 0 && keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh && targetedBlockInfo.mesh.userData.isRobot) {
                     saveAndRunRobotProgram();
@@ -2273,7 +2313,7 @@
             });
 
             renderer.domElement.addEventListener('mousedown', (e) => {
-                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen || isSettingsOpen) return;
 
                 if (e.button === 2 && keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh && targetedBlockInfo.mesh.userData.isRobot) {
                     e.preventDefault();
@@ -2356,14 +2396,9 @@
 
             document.getElementById('btn-inventory-toggle').addEventListener('click', (e) => { e.stopPropagation(); toggleInventory(); });
 
-            document.getElementById('btn-save-world').addEventListener('click', (e) => {
+            document.getElementById('btn-open-settings').addEventListener('click', (e) => {
                 e.stopPropagation();
-                saveWorldToCloudOrLocal();
-            });
-
-            document.getElementById('btn-load-world').addEventListener('click', (e) => {
-                e.stopPropagation();
-                loadWorldFromCloudOrLocal();
+                toggleSettingsModal(true);
             });
         }
 
@@ -2401,7 +2436,7 @@
         }
 
         function jump() {
-            if (player.onGround && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSitting) {
+            if (player.onGround && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSettingsOpen && !isSitting) {
                 player.velocity.y = 0.18;
                 player.onGround = false;
                 playSound('jump');
@@ -2516,7 +2551,7 @@
                 robotData.battery = Math.max(0, robotData.battery - 0.002);
             }
 
-            if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSleeping) {
+            if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSettingsOpen && !isSleeping) {
                 const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
                 const dirY = Math.sin(player.rotation.x);
                 const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
