@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft Mobile & Desktop Hybrid Edition</title>
+    <title>Minecraft PE Hybrid Edition - Touch Look Fixed</title>
     <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Blockly Library for Scratch-style visual block programming -->
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -17,6 +19,7 @@
             -webkit-user-select: none;
             font-family: 'Courier New', Courier, monospace;
             background-color: #0c0f12;
+            touch-action: none;
         }
 
         #game-container {
@@ -24,6 +27,7 @@
             width: 100%;
             height: 100%;
             display: none;
+            touch-action: none;
         }
 
         canvas {
@@ -31,6 +35,7 @@
             width: 100%;
             height: 100%;
             cursor: crosshair;
+            touch-action: none;
         }
 
         /* Lobi Utama */
@@ -135,7 +140,7 @@
         #crosshair::before { top: 8px; left: 0; width: 18px; height: 2px; }
         #crosshair::after { top: 0; left: 8px; width: 2px; height: 18px; }
 
-        /* HUD & Pengaturan Atas */
+        /* HUD Info Atas */
         #hud-info {
             position: absolute;
             top: 10px;
@@ -145,22 +150,22 @@
             font-size: 11px;
             pointer-events: none;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px;
+            background: rgba(0, 0, 0, 0.65);
+            padding: 8px 12px;
             border-radius: 6px;
             border: 2px solid #444;
         }
         #hud-controls {
             position: absolute;
             top: 10px;
-            left: 180px;
+            left: 230px;
             z-index: 20;
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
         }
         .hud-btn {
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.65);
             border: 2px solid #666;
             color: white;
             padding: 5px 10px;
@@ -174,7 +179,7 @@
             background: #27ae60;
         }
 
-        /* Tombol Aksi Blok & Interaksi Kursi / Kasur */
+        /* Tombol Aksi Kanan Bawah */
         #action-buttons-container {
             position: absolute;
             bottom: 20px;
@@ -183,6 +188,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            touch-action: none;
         }
         .action-tool-btn {
             width: 70px;
@@ -199,6 +205,7 @@
             text-shadow: 1px 1px 0px #000;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            touch-action: none;
         }
         .action-tool-btn:active {
             transform: scale(0.95);
@@ -210,6 +217,8 @@
         #btn-stand { border-color: #e67e22; background: rgba(230, 126, 34, 0.6); display: none; }
         #btn-sleep { border-color: #9b59b6; background: rgba(155, 89, 182, 0.5); display: none; }
         #btn-door { border-color: #e67e22; background: rgba(230, 126, 34, 0.6); display: none; }
+        #btn-robot-code { border-color: #3498db; background: rgba(52, 152, 219, 0.6); display: none; }
+        #btn-robot-run { border-color: #2ecc71; background: rgba(46, 204, 113, 0.6); display: none; }
 
         /* Chatbox */
         #chat-container {
@@ -258,7 +267,7 @@
             cursor: pointer;
         }
 
-        /* D-Pad Sentuh */
+        /* D-Pad Sentuh HP */
         #dpad-container {
             position: absolute;
             bottom: 20px;
@@ -270,6 +279,7 @@
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             gap: 3px;
+            touch-action: none;
         }
         .dpad-btn {
             background: rgba(0, 0, 0, 0.5);
@@ -292,7 +302,7 @@
         #dpad-right { grid-column: 3; grid-row: 2; }
         #dpad-down { grid-column: 2; grid-row: 3; }
 
-        /* Tombol Lompat */
+        /* Tombol Lompat HP */
         .btn-action {
             position: absolute;
             width: 54px;
@@ -308,6 +318,7 @@
             justify-content: center;
             text-shadow: 1px 1px 0px #000;
             z-index: 20;
+            touch-action: none;
         }
         #btn-jump { bottom: 100px; right: 105px; }
 
@@ -325,6 +336,7 @@
             z-index: 20;
             max-width: 85vw;
             overflow-x: auto;
+            touch-action: pan-x;
         }
         .hotbar-slot {
             width: 40px;
@@ -338,6 +350,7 @@
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
+            touch-action: none;
         }
         .hotbar-slot.active {
             border: 2px solid #f1c40f;
@@ -490,6 +503,67 @@
             z-index: 9999;
             transition: opacity 1s ease;
         }
+
+        /* --- PANEL SCRATCH BLOCK EDITOR (GOOGLE BLOCKLY) --- */
+        #robot-code-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 820px;
+            max-width: 95vw;
+            height: 85vh;
+            background: #111827;
+            border: 4px solid #3b82f6;
+            border-radius: 12px;
+            z-index: 300;
+            color: white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.95);
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .code-panel-header {
+            background: #1f2937;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #3b82f6;
+        }
+        .code-panel-header h3 {
+            margin: 0;
+            color: #60a5fa;
+            font-size: 14px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .code-panel-body {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: calc(100% - 50px);
+            background: #f8fafc;
+        }
+        #blocklyDiv {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .code-footer-actions {
+            position: absolute;
+            bottom: 12px;
+            right: 18px;
+            z-index: 320;
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -497,7 +571,7 @@
     <div id="lobby-container">
         <div class="lobby-card">
             <h1>MINECRAFT PE HYBRID</h1>
-            <p>PILIH MODE KONTROL SEBELUM BERMAIN</p>
+            <p>PENYEMPURNAAN MODE HP & CONTROL TOUCH</p>
             
             <label style="font-size: 9px; display: block; text-align: left;">NAMA KARAKTER:</label>
             <input type="text" id="username-input" class="lobby-input" value="Steve" maxlength="12">
@@ -506,8 +580,8 @@
             <input type="text" id="seed-input" class="lobby-input" value="999">
 
             <label class="checkbox-container">
-                <input type="checkbox" id="mobile-mode-checkbox">
-                <span>Aktifkan Mobile Mode (D-Pad & Tombol UI)</span>
+                <input type="checkbox" id="mobile-mode-checkbox" checked>
+                <span>Aktifkan Mobile Mode (D-Pad & Touch Usap Menoleh)</span>
             </label>
 
             <button id="btn-enter-game" class="lobby-btn">MASUK KE DUNIA</button>
@@ -519,11 +593,12 @@
         <div id="sleep-overlay"></div>
 
         <div id="hud-info">
-            <div><strong>MINECRAFT EDU</strong></div>
+            <div><strong>MINECRAFT EDU + ROBOT</strong></div>
             <div id="seed-display">Seed: 999</div>
             <div id="coords-display">Posisi: X:0 Y:0 Z:0</div>
             <div id="block-focused">Membidik: -</div>
-            <div id="time-display">Waktu: Pagi</div>
+            <div id="time-display">Waktu: 06:00 (Pagi)</div>
+            <div id="robot-status-hud" style="color: #60a5fa; margin-top:3px; display:none; font-weight:bold;">Baterai Robot: 100%</div>
         </div>
 
         <div id="hud-controls">
@@ -538,7 +613,9 @@
             <button class="action-tool-btn" id="btn-sit">DUDUK</button>
             <button class="action-tool-btn" id="btn-stand">BERDIRI</button>
             <button class="action-tool-btn" id="btn-sleep">TIDUR</button>
-            <button class="action-tool-btn" id="btn-door">PINTO</button>
+            <button class="action-tool-btn" id="btn-door">PINTU</button>
+            <button class="action-tool-btn" id="btn-robot-code">KODE</button>
+            <button class="action-tool-btn" id="btn-robot-run">JALAN</button>
         </div>
 
         <div id="toast-notification"></div>
@@ -561,6 +638,7 @@
 
         <div id="hotbar-container"></div>
 
+        <!-- Panel Inventory -->
         <div id="inventory-panel">
             <h2>Inventaris & Pembuat Blok</h2>
             
@@ -605,10 +683,10 @@
                         <option value="tnt">TNT (Dinamit)</option>
                         <option value="diamond_ore">Diamond Ore (Bijih)</option>
                         <option value="liquid">Liquid (Cairan)</option>
+                        <option value="charger">Charger (Pengisi Baterai Robot)</option>
                     </select>
                 </div>
 
-                <!-- Viscosity slider for liquid behavior -->
                 <div class="creator-field" id="viscosity-container" style="display: none;">
                     <label>Viscosity (Kekentalan): <span id="viscosity-val">2</span> (Area Aliran = <span id="flow-area-val">13</span>)</label>
                     <input type="range" id="custom-viscosity-slider" min="0" max="15" value="2" step="1" oninput="updateViscosityLabel()">
@@ -622,9 +700,53 @@
 
             <button class="close-btn" onclick="toggleInventory()">TUTUP (E)</button>
         </div>
+
+        <!-- PANEL EDITOR KODE ROBOT SCRATCH (BLOCKLY VISUAL CANVAS) -->
+        <div id="robot-code-panel">
+            <div class="code-panel-header">
+                <h3>🧩 SCRATCH BLOCK CODE EDITOR FOR ROBOT</h3>
+                <button class="hud-btn" onclick="toggleRobotCodePanel()" style="background:#ef4444; padding:6px 12px; font-size:10px;">✕ TUTUP</button>
+            </div>
+            <div class="code-panel-body">
+                <div id="blocklyDiv"></div>
+                <div class="code-footer-actions">
+                    <button class="hud-btn" onclick="saveAndRunRobotProgram()" style="background:#10b981; font-size:12px; padding:10px 20px; border:2px solid #059669; box-shadow:0 4px 12px rgba(0,0,0,0.5);">▶ SIMPAN & JALANKAN PROGRAM</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- XML TOOLBOX DEFINISI KATEGORI BALOK SCRATCH -->
+        <xml id="toolbox" style="display: none">
+            <category name="Kontrol & Loop" colour="#FFAB19">
+                <block type="control_forever"></block>
+                <block type="control_if"></block>
+                <block type="control_if_else"></block>
+            </category>
+            <category name="Operator & Komparasi" colour="#59C059">
+                <block type="logic_equals"></block>
+                <block type="logic_less_than"></block>
+                <block type="logic_greater_than"></block>
+                <block type="math_number"><field name="NUM">0</field></block>
+            </category>
+            <category name="Nilai & Variabel" colour="#FF8C1A">
+                <block type="reporter_hour"></block>
+                <block type="reporter_day"></block>
+                <block type="reporter_battery"></block>
+            </category>
+            <category name="Aksi & Gerak Robot" colour="#4C97FF">
+                <block type="action_move_steps"></block>
+                <block type="action_turn_right"></block>
+                <block type="action_turn_left"></block>
+                <block type="action_find_charger"></block>
+                <block type="action_find_bed"></block>
+                <block type="action_sleep"></block>
+            </category>
+        </xml>
+
     </div>
 
     <script>
+        // Data Blok Minecraft
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
             { id: 2, name: "Tanah", type: "dirt", color: 0x866043 },
@@ -636,7 +758,8 @@
             { id: 8, name: "Lampu Redstone", type: "redstone_lamp", color: 0x3e2723 },
             { id: 9, name: "TNT Dinamit", type: "tnt", color: 0xd35400 },
             { id: 10, name: "Bijih Berlian", type: "diamond_ore", color: 0x7bc6cc },
-            { id: 11, name: "Pintu Kayu", type: "door", color: 0x8b4513 }
+            { id: 11, name: "Pintu Kayu", type: "door", color: 0x8b4513 },
+            { id: 12, name: "Stasiun Charger", type: "charger", color: 0xf1c40f }
         ];
 
         let isMobileMode = false;
@@ -650,6 +773,14 @@
         let selectedItem = { type: 'block', id: 1 };
         const customBlocksDatabase = {};
         const mobsList = [];
+
+        // Data Robot
+        let robotMeshGroup = null;
+        let robotData = {
+            position: new THREE.Vector3(2, 1, 2),
+            battery: 85,
+            isRunningProgram: false
+        };
 
         let isSitting = false;
         let isSleeping = false;
@@ -695,6 +826,14 @@
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
                     osc.start(now);
                     osc.stop(now + 0.12);
+                } else if (type === 'beep') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.setValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
                 }
             } catch (e) {}
         }
@@ -722,14 +861,9 @@
                         const block = voxelMap[`${x},${y},${z}`];
                         if (block) {
                             const data = block.userData || {};
-                            // Memeriksa status pintu
                             if (data.type === 'door' || data.id === 11) {
-                                // Jika pintu tertutup, anggap sebagai rintangan padat
-                                if (!data.isOpen) {
-                                    return true;
-                                }
+                                if (!data.isOpen) return true;
                             } else if (data.type === 'liquid') {
-                                // Blok cairan tidak menghalangi jalan fisik pemain
                                 continue;
                             } else {
                                 return true;
@@ -747,25 +881,36 @@
             { type: 'block', id: 3 },
             { type: 'block', id: 4 },
             { type: 'block', id: 5 },
-            { type: 'block', id: 6 },
-            { type: 'block', id: 7 }
+            { type: 'block', id: 12 },
+            { type: 'block', id: 11 }
         ];
 
         const keysPressed = { w: false, a: false, s: false, d: false, shift: false };
         const dpadState = { up: false, down: false, left: false, right: false };
         let isInventoryOpen = false;
         let isChatOpen = false;
+        let isRobotCodeOpen = false;
         let raycaster, mouseCenter;
         let targetedBlockInfo = null;
         let lastValidTargetInfo = null;
         let highlightBox;
-        let gameTime = 0;
+        
+        // 1 Hari Game = 24 Menit Waktu Nyata
+        let gameTime = Math.PI / 4; 
+        const GAME_DAY_SECONDS = 1440; 
+        let currentHourNumber = 6;
+        let currentDayNumber = 1;
+
+        // Variabel Khusus Touch Usap Menoleh Mobile
+        let touchLookId = null;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
 
         function showToast(msg) {
             const t = document.getElementById('toast-notification');
             t.innerText = msg;
             t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 2000);
+            setTimeout(() => { t.style.display = 'none'; }, 2200);
         }
 
         document.getElementById('btn-enter-game').addEventListener('click', () => {
@@ -788,10 +933,13 @@
             initThreeJS();
             generateTerrain();
             spawnMobs();
+            spawnRobot();
             buildHotbarUI();
             buildInventoryUI();
             initPixelEditor();
+            initBlocklyWorkspace();
             setupInputListeners();
+            setupMobileTouchLook();
             animate();
         });
 
@@ -886,6 +1034,7 @@
                     createBlockMesh(x, h-2, z, 3);
                 }
             }
+            createBlockMesh(3, 1, 3, 12);
         }
 
         function spawnMobs() {
@@ -908,6 +1057,58 @@
             }
         }
 
+        function spawnRobot() {
+            robotMeshGroup = new THREE.Group();
+            
+            const metalMat = new THREE.MeshLambertMaterial({ color: 0xbdc3c7 });
+            const darkMetalMat = new THREE.MeshLambertMaterial({ color: 0x34495e });
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x2ecc71 });
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), metalMat);
+            body.position.y = 0.85;
+            robotMeshGroup.add(body);
+
+            const chestDisplay = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.52), darkMetalMat);
+            chestDisplay.position.set(0, 0.9, 0);
+            robotMeshGroup.add(chestDisplay);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.45), metalMat);
+            head.position.set(0, 1.5, 0);
+            robotMeshGroup.add(head);
+
+            const antenna = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), darkMetalMat);
+            antenna.position.set(0, 1.8, 0);
+            robotMeshGroup.add(antenna);
+
+            const eyeLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.48), eyeMat);
+            eyeLeft.position.set(-0.12, 1.5, 0.02);
+            robotMeshGroup.add(eyeLeft);
+
+            const eyeRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.48), eyeMat);
+            eyeRight.position.set(0.12, 1.5, 0.02);
+            robotMeshGroup.add(eyeRight);
+
+            const legLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), darkMetalMat);
+            legLeft.position.set(-0.2, 0.2, 0);
+            robotMeshGroup.add(legLeft);
+
+            const legRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), darkMetalMat);
+            legRight.position.set(0.2, 0.2, 0);
+            robotMeshGroup.add(legRight);
+
+            robotMeshGroup.position.set(2, 1, 2);
+            robotMeshGroup.userData = { isRobot: true, type: 'robot', name: 'Robot' };
+
+            robotMeshGroup.traverse(child => {
+                if (child.isMesh) {
+                    child.userData = robotMeshGroup.userData;
+                    blocksGroup.push(child);
+                }
+            });
+
+            scene.add(robotMeshGroup);
+        }
+
         function getBlockData(id) {
             if (customBlocksDatabase[id]) return customBlocksDatabase[id];
             return minecraftBlocks.find(b => b.id === id) || minecraftBlocks[0];
@@ -927,20 +1128,16 @@
                     new THREE.MeshLambertMaterial({ map: createPixelTexture(bData.color || 0x8b4513, null, false) });
                 const handleMat = new THREE.MeshLambertMaterial({ color: 0xd4af37 });
 
-                // Door Panel Mesh (Width 1, Height 2, Depth 0.25)
-                // Offset mesh position relative to pivot so door rotates along one edge (hinge)
                 const panelGeo = new THREE.BoxGeometry(1, 2, 0.25);
                 const panelMesh = new THREE.Mesh(panelGeo, doorMat);
                 panelMesh.position.set(0.5, 1, 0.125);
                 doorGroup.add(panelMesh);
 
-                // Door Knob / Handle
                 const handleGeo = new THREE.BoxGeometry(0.08, 0.15, 0.35);
                 const handleMesh = new THREE.Mesh(handleGeo, handleMat);
                 handleMesh.position.set(0.85, 1, 0.125);
                 doorGroup.add(handleMesh);
 
-                // Set pivot container at (x - 0.5, y - 0.5, z - 0.125) so bottom rests on the surface
                 doorGroup.position.set(x - 0.5, y - 0.5, z - 0.125);
                 doorGroup.userData = { id: id, type: bData.type, isOpen: false, basePos: { x: x, y: y, z: z } };
 
@@ -954,6 +1151,27 @@
                 scene.add(doorGroup);
                 voxelMap[key] = doorGroup;
                 voxelMap[`${x},${y+1},${z}`] = doorGroup;
+                return;
+            }
+
+            if (id === 12 || bData.type === 'charger') {
+                const chargerGroup = new THREE.Group();
+                const mat = new THREE.MeshLambertMaterial({ color: 0xf1c40f });
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0x3498db });
+
+                const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.9), mat);
+                baseMesh.position.y = 0.15;
+                chargerGroup.add(baseMesh);
+
+                const coreMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), coreMat);
+                coreMesh.position.y = 0.5;
+                chargerGroup.add(coreMesh);
+
+                chargerGroup.position.set(x, y, z);
+                chargerGroup.userData = { id: id, type: bData.type, isCharger: true };
+                chargerGroup.traverse(child => { if (child.isMesh) { child.userData = chargerGroup.userData; blocksGroup.push(child); } });
+                scene.add(chargerGroup);
+                voxelMap[key] = chargerGroup;
                 return;
             }
 
@@ -1009,7 +1227,7 @@
                 bedGroup.add(frameMesh);
 
                 bedGroup.position.set(x, y, z);
-                bedGroup.userData = { id: id, type: bData.type };
+                bedGroup.userData = { id: id, type: bData.type, isBed: true };
                 bedGroup.traverse(child => { if (child.isMesh) { child.userData = bedGroup.userData; blocksGroup.push(child); } });
                 scene.add(bedGroup);
                 voxelMap[key] = bedGroup;
@@ -1160,12 +1378,402 @@
             toggleCustomBlockCreator();
         }
 
+        // --- SISTEM PEMROGRAMAN BALOK VISUAL SCRATCH (GOOGLE BLOCKLY INTEGRATION) ---
+        let blocklyWorkspace = null;
+
+        function initBlocklyWorkspace() {
+            Blockly.Blocks['control_forever'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("forever");
+                    this.appendStatementInput("DO");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(30);
+                }
+            };
+
+            Blockly.Blocks['control_if'] = {
+                init: function() {
+                    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("if");
+                    this.appendDummyInput().appendField("then");
+                    this.appendStatementInput("DO");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(30);
+                }
+            };
+
+            Blockly.Blocks['control_if_else'] = {
+                init: function() {
+                    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("if");
+                    this.appendDummyInput().appendField("then");
+                    this.appendStatementInput("DO");
+                    this.appendDummyInput().appendField("else");
+                    this.appendStatementInput("ELSE");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(30);
+                }
+            };
+
+            Blockly.Blocks['reporter_hour'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Hour");
+                    this.setOutput(true, "Number");
+                    this.setColour(25);
+                }
+            };
+
+            Blockly.Blocks['reporter_day'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Day");
+                    this.setOutput(true, "Number");
+                    this.setColour(25);
+                }
+            };
+
+            Blockly.Blocks['reporter_battery'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Battery");
+                    this.setOutput(true, "Number");
+                    this.setColour(25);
+                }
+            };
+
+            Blockly.Blocks['logic_equals'] = {
+                init: function() {
+                    this.appendValueInput("A").setCheck(null);
+                    this.appendDummyInput().appendField("=");
+                    this.appendValueInput("B").setCheck(null);
+                    this.setInputsInline(true);
+                    this.setOutput(true, "Boolean");
+                    this.setColour(120);
+                }
+            };
+
+            Blockly.Blocks['logic_less_than'] = {
+                init: function() {
+                    this.appendValueInput("A").setCheck(null);
+                    this.appendDummyInput().appendField("<");
+                    this.appendValueInput("B").setCheck(null);
+                    this.setInputsInline(true);
+                    this.setOutput(true, "Boolean");
+                    this.setColour(120);
+                }
+            };
+
+            Blockly.Blocks['logic_greater_than'] = {
+                init: function() {
+                    this.appendValueInput("A").setCheck(null);
+                    this.appendDummyInput().appendField(">");
+                    this.appendValueInput("B").setCheck(null);
+                    this.setInputsInline(true);
+                    this.setOutput(true, "Boolean");
+                    this.setColour(120);
+                }
+            };
+
+            Blockly.Blocks['action_move_steps'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("move")
+                        .appendField(new Blockly.FieldNumber(10), "STEPS")
+                        .appendField("steps");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                }
+            };
+
+            Blockly.Blocks['action_turn_right'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("turn ↷")
+                        .appendField(new Blockly.FieldNumber(90), "DEGREES")
+                        .appendField("degrees");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                }
+            };
+
+            Blockly.Blocks['action_turn_left'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("turn ↶")
+                        .appendField(new Blockly.FieldNumber(90), "DEGREES")
+                        .appendField("degrees");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                }
+            };
+
+            Blockly.Blocks['action_find_charger'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Find a charger");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(345);
+                }
+            };
+
+            Blockly.Blocks['action_find_bed'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Find a bed");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(345);
+                }
+            };
+
+            Blockly.Blocks['action_sleep'] = {
+                init: function() {
+                    this.appendDummyInput().appendField("Sleep");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(345);
+                }
+            };
+
+            blocklyWorkspace = Blockly.inject('blocklyDiv', {
+                toolbox: document.getElementById('toolbox'),
+                scrollbars: true,
+                trashcan: true,
+                grid: {
+                    spacing: 20,
+                    length: 3,
+                    colour: '#cbd5e1',
+                    snap: true
+                },
+                zoom: {
+                    controls: true,
+                    wheel: true,
+                    startScale: 1.0,
+                    maxScale: 3,
+                    minScale: 0.3,
+                    scaleSpeed: 1.2
+                }
+            });
+
+            const sampleXmlText = `
+            <xml xmlns="https://developers.google.com/blockly/xml">
+              <block type="control_forever" x="30" y="40">
+                <statement name="DO">
+                  <block type="control_if">
+                    <value name="CONDITION">
+                      <block type="logic_less_than">
+                        <value name="A">
+                          <block type="reporter_battery"></block>
+                        </value>
+                        <value name="B">
+                          <block type="math_number">
+                            <field name="NUM">20</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO">
+                      <block type="action_find_charger"></block>
+                    </statement>
+                  </block>
+                </statement>
+              </block>
+              <block type="action_move_steps" x="320" y="40">
+                <field name="STEPS">10</field>
+              </block>
+              <block type="action_sleep" x="320" y="120"></block>
+            </xml>
+            `;
+            try {
+                const xml = Blockly.utils.xml.textToDom(sampleXmlText);
+                Blockly.Xml.domToWorkspace(xml, blocklyWorkspace);
+            } catch(e) {}
+        }
+
+        function toggleRobotCodePanel() {
+            isRobotCodeOpen = !isRobotCodeOpen;
+            const panel = document.getElementById('robot-code-panel');
+            panel.style.display = isRobotCodeOpen ? 'flex' : 'none';
+            if (isRobotCodeOpen) {
+                if (!isMobileMode) document.exitPointerLock();
+                setTimeout(() => {
+                    if (blocklyWorkspace) Blockly.svgResize(blocklyWorkspace);
+                }, 100);
+            } else {
+                if (!isMobileMode && !isSitting) renderer.domElement.requestPointerLock().catch(() => {});
+            }
+        }
+
+        async function saveAndRunRobotProgram() {
+            if (!blocklyWorkspace) return;
+            playSound('beep');
+            showToast("Memproses Program Balok Scratch Robot...");
+
+            if (isRobotCodeOpen) toggleRobotCodePanel();
+
+            robotData.isRunningProgram = true;
+
+            const topBlocks = blocklyWorkspace.getTopBlocks(true);
+            for (let block of topBlocks) {
+                await runBlockRecursive(block);
+            }
+            showToast("Selesai menjalankan eksekusi Balok Robot!");
+        }
+
+        async function runBlockRecursive(block) {
+            if (!block || !robotData.isRunningProgram) return;
+
+            const type = block.type;
+
+            if (type === 'action_move_steps') {
+                const steps = parseFloat(block.getFieldValue('STEPS')) || 10;
+                const dist = steps * 0.05;
+                robotMeshGroup.position.x += Math.sin(robotMeshGroup.rotation.y) * dist;
+                robotMeshGroup.position.z += Math.cos(robotMeshGroup.rotation.y) * dist;
+                playSound('beep');
+                await new Promise(r => setTimeout(r, 300));
+            } else if (type === 'action_turn_right') {
+                const deg = parseFloat(block.getFieldValue('DEGREES')) || 90;
+                robotMeshGroup.rotation.y -= (deg * Math.PI / 180);
+                playSound('beep');
+                await new Promise(r => setTimeout(r, 300));
+            } else if (type === 'action_turn_left') {
+                const deg = parseFloat(block.getFieldValue('DEGREES')) || 90;
+                robotMeshGroup.rotation.y += (deg * Math.PI / 180);
+                playSound('beep');
+                await new Promise(r => setTimeout(r, 300));
+            } else if (type === 'action_find_charger') {
+                findNearestCharger();
+                await new Promise(r => setTimeout(r, 500));
+            } else if (type === 'action_find_bed') {
+                findNearestBed();
+                await new Promise(r => setTimeout(r, 500));
+            } else if (type === 'action_sleep') {
+                showToast("Robot tidur sementara...");
+                await new Promise(r => setTimeout(r, 1000));
+            } else if (type === 'control_if') {
+                const condVal = evalBlockValue(block.getInputTargetBlock('CONDITION'));
+                if (condVal) {
+                    let doBlock = block.getInputTargetBlock('DO');
+                    while (doBlock) {
+                        await runBlockRecursive(doBlock);
+                        doBlock = doBlock.getNextBlock();
+                    }
+                }
+            } else if (type === 'control_if_else') {
+                const condVal = evalBlockValue(block.getInputTargetBlock('CONDITION'));
+                if (condVal) {
+                    let doBlock = block.getInputTargetBlock('DO');
+                    while (doBlock) {
+                        await runBlockRecursive(doBlock);
+                        doBlock = doBlock.getNextBlock();
+                    }
+                } else {
+                    let elseBlock = block.getInputTargetBlock('ELSE');
+                    while (elseBlock) {
+                        await runBlockRecursive(elseBlock);
+                        elseBlock = elseBlock.getNextBlock();
+                    }
+                }
+            } else if (type === 'control_forever') {
+                let loopCount = 0;
+                while (robotData.isRunningProgram && loopCount < 5) {
+                    let doBlock = block.getInputTargetBlock('DO');
+                    while (doBlock) {
+                        await runBlockRecursive(doBlock);
+                        doBlock = doBlock.getNextBlock();
+                    }
+                    loopCount++;
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+
+            const next = block.getNextBlock();
+            if (next) {
+                await runBlockRecursive(next);
+            }
+        }
+
+        function evalBlockValue(block) {
+            if (!block) return false;
+            const type = block.type;
+            if (type === 'reporter_hour') return currentHourNumber;
+            if (type === 'reporter_day') return currentDayNumber;
+            if (type === 'reporter_battery') return Math.round(robotData.battery);
+            if (type === 'math_number') return parseFloat(block.getFieldValue('NUM')) || 0;
+            if (type === 'logic_less_than') {
+                const a = evalBlockValue(block.getInputTargetBlock('A'));
+                const b = evalBlockValue(block.getInputTargetBlock('B'));
+                return a < b;
+            }
+            if (type === 'logic_greater_than') {
+                const a = evalBlockValue(block.getInputTargetBlock('A'));
+                const b = evalBlockValue(block.getInputTargetBlock('B'));
+                return a > b;
+            }
+            if (type === 'logic_equals') {
+                const a = evalBlockValue(block.getInputTargetBlock('A'));
+                const b = evalBlockValue(block.getInputTargetBlock('B'));
+                return a == b;
+            }
+            return false;
+        }
+
+        function findNearestCharger() {
+            let nearestDist = Infinity;
+            let targetPos = null;
+
+            for (const key in voxelMap) {
+                const block = voxelMap[key];
+                if (block && block.userData && (block.userData.isCharger || block.userData.id === 12)) {
+                    const pos = block.position.clone();
+                    const dist = robotMeshGroup.position.distanceTo(pos);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        targetPos = pos;
+                    }
+                }
+            }
+
+            if (targetPos) {
+                robotMeshGroup.position.set(targetPos.x, targetPos.y + 1, targetPos.z);
+                robotData.battery = 100;
+                showToast("Robot berpindah ke Stasiun Charger & baterai diisi ke 100%!");
+            } else {
+                showToast("Stasiun Charger tidak ditemukan di dunia!");
+            }
+        }
+
+        function findNearestBed() {
+            let nearestDist = Infinity;
+            let targetPos = null;
+
+            for (const key in voxelMap) {
+                const block = voxelMap[key];
+                if (block && block.userData && (block.userData.isBed || block.userData.id === 4)) {
+                    const pos = block.position.clone();
+                    const dist = robotMeshGroup.position.distanceTo(pos);
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        targetPos = pos;
+                    }
+                }
+            }
+
+            if (targetPos) {
+                robotMeshGroup.position.set(targetPos.x, targetPos.y + 0.8, targetPos.z);
+                showToast("Robot berpindah ke Tempat Tidur!");
+            } else {
+                showToast("Tempat Tidur tidak ditemukan!");
+            }
+        }
+
         function toggleDoor(doorGroup) {
             if (!doorGroup) return;
             const data = doorGroup.userData;
             data.isOpen = !data.isOpen;
 
-            // Rotate 90 degrees around Y axis hinge when open
             if (data.isOpen) {
                 doorGroup.rotation.y = Math.PI / 2;
                 playSound('place');
@@ -1184,17 +1792,17 @@
             
             const overlay = document.getElementById('sleep-overlay');
             overlay.style.opacity = '1';
-            showToast("Sedang tidur... Layar menggelap selama 2 detik...");
+            showToast("Sedang tidur... Layar menggelap...");
 
             setTimeout(() => {
-                gameTime = Math.PI / 2;
+                gameTime = Math.PI / 4;
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     isSleeping = false;
                     if (!isMobileMode && !isSitting) {
                         renderer.domElement.requestPointerLock().catch(() => {});
                     }
-                    showToast("Selamat pagi! Waktu diset ke pagi hari.");
+                    showToast("Selamat pagi! Waktu diset ke jam 06:00.");
                 }, 1000);
             }, 2000);
         }
@@ -1239,6 +1847,57 @@
             showToast("Berdiri dan melompat dari kursi!");
         }
 
+        // SET UP PENANGANAN TOUCH USAP MENOLEH MOBILE
+        function setupMobileTouchLook() {
+            const canvasEl = renderer.domElement;
+
+            canvasEl.addEventListener('touchstart', (e) => {
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touchLookId === null) {
+                        touchLookId = touch.identifier;
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            canvasEl.addEventListener('touchmove', (e) => {
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === touchLookId) {
+                        e.preventDefault();
+                        const deltaX = touch.clientX - lastTouchX;
+                        const deltaY = touch.clientY - lastTouchY;
+
+                        const sensitivity = 0.005;
+                        player.rotation.y -= deltaX * sensitivity;
+                        player.rotation.x -= deltaY * sensitivity;
+                        player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.rotation.x));
+
+                        lastTouchX = touch.clientX;
+                        lastTouchY = touch.clientY;
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            const resetTouch = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === touchLookId) {
+                        touchLookId = null;
+                        break;
+                    }
+                }
+            };
+
+            canvasEl.addEventListener('touchend', resetTouch);
+            canvasEl.addEventListener('touchcancel', resetTouch);
+        }
+
         function setupInputListeners() {
             window.addEventListener('keydown', (e) => {
                 if (e.altKey && e.key.toLowerCase() === 'c') {
@@ -1266,7 +1925,7 @@
                     return;
                 }
 
-                if (isChatOpen || isInventoryOpen) return;
+                if (isChatOpen || isInventoryOpen || isRobotCodeOpen) return;
 
                 const k = e.key.toLowerCase();
                 if (k === 'w' || k === 'arrowup') keysPressed.w = true;
@@ -1293,13 +1952,13 @@
 
             if (!isMobileMode) {
                 renderer.domElement.addEventListener('click', () => {
-                    if (!isInventoryOpen && !isChatOpen) {
+                    if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen) {
                         renderer.domElement.requestPointerLock().catch(() => {});
                     }
                 });
 
                 document.addEventListener('mousemove', (e) => {
-                    if (document.pointerLockElement === renderer.domElement && !isInventoryOpen && !isChatOpen) {
+                    if (document.pointerLockElement === renderer.domElement && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen) {
                         player.rotation.y -= e.movementX * 0.003;
                         player.rotation.x -= e.movementY * 0.003;
                         player.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.rotation.x));
@@ -1308,10 +1967,14 @@
             }
 
             function performBreakBlock() {
-                if (isInventoryOpen || isChatOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const mesh = target.mesh;
+                    if (mesh.userData && mesh.userData.isRobot) {
+                        showToast("Robot tidak dapat dihancurkan!");
+                        return;
+                    }
                     const parentRoot = mesh.parent && mesh.parent.isGroup ? mesh.parent : mesh;
                     let px, py, pz;
                     if (parentRoot.userData && parentRoot.userData.basePos) {
@@ -1327,7 +1990,7 @@
                     }
                     removeBlockMesh(px, py, pz);
                     playSound('break');
-                    showToast("Blok/Kursi/Kasur/Pintu Berhasil Dihancurkan!");
+                    showToast("Blok Berhasil Dihancurkan!");
                     targetedBlockInfo = null;
                     lastValidTargetInfo = null;
                     highlightBox.visible = false;
@@ -1337,7 +2000,7 @@
             }
 
             function performPlaceBlock() {
-                if (isInventoryOpen || isChatOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const normal = target.face.normal;
@@ -1365,7 +2028,13 @@
 
             renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
             renderer.domElement.addEventListener('click', (e) => {
-                if (isInventoryOpen || isChatOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+
+                if (e.button === 0 && keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh && targetedBlockInfo.mesh.userData.isRobot) {
+                    saveAndRunRobotProgram();
+                    return;
+                }
+
                 if (e.button === 0) {
                     if (keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh) {
                         const bId = targetedBlockInfo.mesh.userData.id;
@@ -1392,18 +2061,35 @@
             });
 
             renderer.domElement.addEventListener('mousedown', (e) => {
-                if (isInventoryOpen || isChatOpen) return;
+                if (isInventoryOpen || isChatOpen || isRobotCodeOpen) return;
+
+                if (e.button === 2 && keysPressed.shift && targetedBlockInfo && targetedBlockInfo.mesh && targetedBlockInfo.mesh.userData.isRobot) {
+                    e.preventDefault();
+                    toggleRobotCodePanel();
+                    return;
+                }
+
                 if (e.button === 2) {
                     e.preventDefault();
                     performPlaceBlock();
                 }
             });
 
-            document.getElementById('btn-break-block').addEventListener('click', (e) => { e.stopPropagation(); performBreakBlock(); });
-            document.getElementById('btn-place-block').addEventListener('click', (e) => { e.stopPropagation(); performPlaceBlock(); });
+            const addUIStopProp = (elId, callback) => {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                const handler = (e) => {
+                    e.stopPropagation();
+                    if (callback) callback(e);
+                };
+                el.addEventListener('click', handler);
+                el.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
+            };
+
+            addUIStopProp('btn-break-block', performBreakBlock);
+            addUIStopProp('btn-place-block', performPlaceBlock);
             
-            document.getElementById('btn-sit').addEventListener('click', (e) => {
-                e.stopPropagation();
+            addUIStopProp('btn-sit', () => {
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const bId = target.mesh.userData.id;
@@ -1420,8 +2106,7 @@
                 }
             });
 
-            document.getElementById('btn-door').addEventListener('click', (e) => {
-                e.stopPropagation();
+            addUIStopProp('btn-door', () => {
                 const target = targetedBlockInfo || lastValidTargetInfo;
                 if (target && target.mesh) {
                     const bId = target.mesh.userData.id;
@@ -1436,25 +2121,31 @@
                 }
             });
 
-            document.getElementById('btn-stand').addEventListener('click', (e) => { e.stopPropagation(); standUp(); });
+            addUIStopProp('btn-robot-code', toggleRobotCodePanel);
+            addUIStopProp('btn-robot-run', saveAndRunRobotProgram);
+            addUIStopProp('btn-stand', standUp);
 
             const bindDpad = (id, key) => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                el.addEventListener('touchstart', (e) => { e.preventDefault(); dpadState[key] = true; });
-                el.addEventListener('touchend', (e) => { e.preventDefault(); dpadState[key] = false; });
-                el.addEventListener('mousedown', () => { dpadState[key] = true; });
-                el.addEventListener('mouseup', () => { dpadState[key] = false; });
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); dpadState[key] = true; }, { passive: false });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); dpadState[key] = false; }, { passive: false });
+                el.addEventListener('mousedown', (e) => { e.stopPropagation(); dpadState[key] = true; });
+                el.addEventListener('mouseup', (e) => { e.stopPropagation(); dpadState[key] = false; });
             };
             bindDpad('dpad-up', 'up');
             bindDpad('dpad-down', 'down');
             bindDpad('dpad-left', 'left');
             bindDpad('dpad-right', 'right');
 
-            document.getElementById('btn-jump').addEventListener('click', jump);
-            document.getElementById('btn-inventory-toggle').addEventListener('click', toggleInventory);
+            const btnJumpEl = document.getElementById('btn-jump');
+            btnJumpEl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); jump(); }, { passive: false });
+            btnJumpEl.addEventListener('click', (e) => { e.stopPropagation(); jump(); });
 
-            document.getElementById('btn-save-world').addEventListener('click', () => {
+            document.getElementById('btn-inventory-toggle').addEventListener('click', (e) => { e.stopPropagation(); toggleInventory(); });
+
+            document.getElementById('btn-save-world').addEventListener('click', (e) => {
+                e.stopPropagation();
                 const saveData = [];
                 for (const key in voxelMap) {
                     saveData.push({ pos: key, id: voxelMap[key].userData.id });
@@ -1463,7 +2154,8 @@
                 showToast("Dunia berhasil disimpan!");
             });
 
-            document.getElementById('btn-load-world').addEventListener('click', () => {
+            document.getElementById('btn-load-world').addEventListener('click', (e) => {
+                e.stopPropagation();
                 const raw = localStorage.getItem('minecraft_pe_save');
                 if (!raw) {
                     showToast("Tidak ada data simpanan ditemukan!");
@@ -1523,7 +2215,7 @@
         }
 
         function jump() {
-            if (player.onGround && !isInventoryOpen && !isChatOpen && !isSitting) {
+            if (player.onGround && !isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSitting) {
                 player.velocity.y = 0.18;
                 player.onGround = false;
                 playSound('jump');
@@ -1553,7 +2245,8 @@
             }
         }
 
-        document.getElementById('chat-send').addEventListener('click', () => {
+        document.getElementById('chat-send').addEventListener('click', (e) => {
+            e.stopPropagation();
             const input = document.getElementById('chat-input');
             const txt = input.value.trim();
             if (txt) {
@@ -1573,7 +2266,8 @@
                 const div = document.createElement('div');
                 div.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
                 div.innerHTML = `<div class="slot-color-box" style="background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}"></div><div class="slot-name">${b.name.substring(0,7)}</div>`;
-                div.onclick = () => { activeHotbarIndex = idx; selectedItem = slot; buildHotbarUI(); };
+                div.addEventListener('click', (e) => { e.stopPropagation(); activeHotbarIndex = idx; selectedItem = slot; buildHotbarUI(); });
+                div.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
                 container.appendChild(div);
             });
         }
@@ -1598,18 +2292,28 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            gameTime += 0.0005;
+            // Siklus Waktu 24 Menit
+            const delta = clock.getDelta();
+            gameTime += (delta / GAME_DAY_SECONDS) * (Math.PI * 2);
+
             const cycle = Math.sin(gameTime);
             let skyColor, timeStr;
+
+            const normalizedTime = ((gameTime % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            const totalGameMinutes = Math.floor((normalizedTime / (Math.PI * 2)) * 1440);
+            currentHourNumber = Math.floor(totalGameMinutes / 60) % 24;
+            const gameMinute = totalGameMinutes % 60;
+            const formattedTime = `${String(currentHourNumber).padStart(2, '0')}:${String(gameMinute).padStart(2, '0')}`;
+
             if (cycle > 0.2) {
                 skyColor = new THREE.Color(0x87ceeb);
-                timeStr = "Pagi / Siang";
+                timeStr = `${formattedTime} (Siang)`;
             } else if (cycle < -0.2) {
                 skyColor = new THREE.Color(0x0c141f);
-                timeStr = "Malam";
+                timeStr = `${formattedTime} (Malam)`;
             } else {
                 skyColor = new THREE.Color(0xd97757);
-                timeStr = "Sore / Senja";
+                timeStr = `${formattedTime} (Senja/Pagi)`;
             }
             scene.background.lerp(skyColor, 0.05);
             scene.fog.color.lerp(skyColor, 0.05);
@@ -1622,7 +2326,11 @@
                 mob.mesh.rotation.y = -mob.angle;
             });
 
-            if (!isInventoryOpen && !isChatOpen && !isSleeping) {
+            if (robotData.battery > 0) {
+                robotData.battery = Math.max(0, robotData.battery - 0.002);
+            }
+
+            if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSleeping) {
                 const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
                 const dirY = Math.sin(player.rotation.x);
                 const dirZ = Math.cos(player.rotation.x) * Math.cos(player.rotation.y);
@@ -1688,24 +2396,41 @@
                     
                     const bId = targetedBlockInfo.mesh.userData.id;
                     const bData = getBlockData(bId);
-                    document.getElementById('block-focused').innerText = `Membidik: ${bData ? bData.name : bId}`;
-
-                    if (bId === 5 || bData.type === 'chair') {
-                        document.getElementById('btn-sit').style.display = isSitting ? 'none' : 'flex';
-                        document.getElementById('btn-sleep').style.display = 'none';
-                        document.getElementById('btn-door').style.display = 'none';
-                    } else if (bId === 4 || bData.type === 'bed') {
-                        document.getElementById('btn-sleep').style.display = 'flex';
-                        document.getElementById('btn-sit').style.display = 'none';
-                        document.getElementById('btn-door').style.display = 'none';
-                    } else if (bId === 11 || bData.type === 'door') {
-                        document.getElementById('btn-door').style.display = 'flex';
+                    
+                    if (targetedBlockInfo.mesh.userData.isRobot) {
+                        document.getElementById('block-focused').innerText = isMobileMode ? 
+                            `Membidik: Robot (Gunakan Tombol KODE/JALAN)` : 
+                            `Membidik: Robot (Shift+RMB: Kode | Shift+LMB: Jalan)`;
+                        document.getElementById('btn-robot-code').style.display = 'flex';
+                        document.getElementById('btn-robot-run').style.display = 'flex';
+                        document.getElementById('robot-status-hud').style.display = 'block';
+                        document.getElementById('robot-status-hud').innerText = `Baterai Robot: ${Math.round(robotData.battery)}%`;
                         document.getElementById('btn-sit').style.display = 'none';
                         document.getElementById('btn-sleep').style.display = 'none';
+                        document.getElementById('btn-door').style.display = 'none';
                     } else {
-                        document.getElementById('btn-sit').style.display = 'none';
-                        document.getElementById('btn-sleep').style.display = 'none';
-                        document.getElementById('btn-door').style.display = 'none';
+                        document.getElementById('block-focused').innerText = `Membidik: ${bData ? bData.name : bId}`;
+                        document.getElementById('btn-robot-code').style.display = 'none';
+                        document.getElementById('btn-robot-run').style.display = 'none';
+                        document.getElementById('robot-status-hud').style.display = 'none';
+
+                        if (bId === 5 || bData.type === 'chair') {
+                            document.getElementById('btn-sit').style.display = isSitting ? 'none' : 'flex';
+                            document.getElementById('btn-sleep').style.display = 'none';
+                            document.getElementById('btn-door').style.display = 'none';
+                        } else if (bId === 4 || bData.type === 'bed') {
+                            document.getElementById('btn-sleep').style.display = 'flex';
+                            document.getElementById('btn-sit').style.display = 'none';
+                            document.getElementById('btn-door').style.display = 'none';
+                        } else if (bId === 11 || bData.type === 'door') {
+                            document.getElementById('btn-door').style.display = 'flex';
+                            document.getElementById('btn-sit').style.display = 'none';
+                            document.getElementById('btn-sleep').style.display = 'none';
+                        } else {
+                            document.getElementById('btn-sit').style.display = 'none';
+                            document.getElementById('btn-sleep').style.display = 'none';
+                            document.getElementById('btn-door').style.display = 'none';
+                        }
                     }
                 }
             } else {
@@ -1715,6 +2440,9 @@
                 document.getElementById('btn-sit').style.display = 'none';
                 document.getElementById('btn-sleep').style.display = 'none';
                 document.getElementById('btn-door').style.display = 'none';
+                document.getElementById('btn-robot-code').style.display = 'none';
+                document.getElementById('btn-robot-run').style.display = 'none';
+                document.getElementById('robot-status-hud').style.display = 'none';
             }
 
             renderer.render(scene, camera);
