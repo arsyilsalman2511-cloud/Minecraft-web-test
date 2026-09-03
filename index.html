@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft PE Hybrid Edition - Touch Look Fixed</title>
+    <title>Minecraft PE Hybrid Edition - Multi-World Cloud Sync</title>
     <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Blockly Library for Scratch-style visual block programming -->
     <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <!-- Firebase Engine for Realtime Cloud Sync across players -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -38,7 +42,7 @@
             touch-action: none;
         }
 
-        /* Lobi Utama */
+        /* Lobi Utama Sesuai Sketsa */
         #lobby-container {
             position: absolute;
             top: 0;
@@ -56,45 +60,55 @@
         }
         .lobby-card {
             background: rgba(20, 26, 35, 0.95);
-            padding: 25px;
+            padding: 22px;
             border-radius: 12px;
             border: 4px solid #34495e;
-            width: 360px;
-            max-width: 85%;
+            width: 380px;
+            max-width: 90%;
             text-align: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .lobby-card h1 {
-            font-size: 20px;
+            font-size: 18px;
             margin: 0 0 5px 0;
             color: #2ecc71;
             letter-spacing: 2px;
         }
         .lobby-card p {
-            font-size: 9px;
+            font-size: 8px;
             color: #95a5a6;
-            margin: 0 0 15px 0;
+            margin: 0 0 12px 0;
+        }
+        .lobby-field-label {
+            font-size: 9px;
+            display: block;
+            text-align: left;
+            margin-top: 8px;
+            color: #3b82f6;
+            font-weight: bold;
         }
         .lobby-input {
             width: 100%;
             padding: 8px;
-            margin: 6px 0;
+            margin: 4px 0;
             box-sizing: border-box;
             background: #0d1117;
             border: 2px solid #4f5d73;
             color: white;
             font-family: monospace;
-            font-size: 12px;
-            text-align: center;
+            font-size: 11px;
+            text-align: left;
             border-radius: 4px;
         }
         .checkbox-container {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 8px;
-            margin: 12px 0;
-            font-size: 11px;
+            margin: 10px 0;
+            font-size: 10px;
             color: #ecf0f1;
             cursor: pointer;
         }
@@ -104,11 +118,11 @@
         }
         .lobby-btn {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background: #2ecc71;
             color: white;
             border: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 4px;
@@ -119,6 +133,39 @@
         .lobby-btn:active {
             transform: translateY(2px);
             box-shadow: none;
+        }
+        
+        .world-list-box {
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .world-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 9px;
+            cursor: pointer;
+        }
+        .world-item:hover {
+            background: #2563eb;
+            border-color: #60a5fa;
+        }
+        .world-url-sim {
+            font-size: 7px;
+            color: #94a3b8;
+            margin-top: 2px;
+            word-break: break-all;
         }
 
         /* Crosshair */
@@ -147,7 +194,7 @@
             left: 10px;
             color: #fff;
             text-shadow: 2px 2px 0px #000;
-            font-size: 11px;
+            font-size: 10px;
             pointer-events: none;
             z-index: 10;
             background: rgba(0, 0, 0, 0.65);
@@ -158,7 +205,7 @@
         #hud-controls {
             position: absolute;
             top: 10px;
-            left: 230px;
+            left: 240px;
             z-index: 20;
             display: flex;
             gap: 6px;
@@ -570,21 +617,31 @@
 
     <div id="lobby-container">
         <div class="lobby-card">
-            <h1>MINECRAFT PE HYBRID</h1>
-            <p>PENYEMPURNAAN MODE HP & CONTROL TOUCH</p>
+            <h1>MENU MULAI (DUNIA SINKRON)</h1>
+            <p>SINKRONISASI DUNIA ANTAR PEMAIN (CLOUD SYNC)</p>
             
-            <label style="font-size: 9px; display: block; text-align: left;">NAMA KARAKTER:</label>
+            <label class="lobby-field-label">NAMA DUNIA:</label>
+            <input type="text" id="world-name-input" class="lobby-input" value="Dunia A" placeholder="Misal: Dunia A">
+
+            <label class="lobby-field-label">NAMA PLAYER:</label>
             <input type="text" id="username-input" class="lobby-input" value="Steve" maxlength="12">
 
-            <label style="font-size: 9px; display: block; text-align: left; margin-top: 6px;">SEED DUNIA:</label>
+            <label class="lobby-field-label">SEED DUNIA:</label>
             <input type="text" id="seed-input" class="lobby-input" value="999">
 
             <label class="checkbox-container">
                 <input type="checkbox" id="mobile-mode-checkbox" checked>
-                <span>Aktifkan Mobile Mode (D-Pad & Touch Usap Menoleh)</span>
+                <span>mode HP (DPad dan tombol UI)</span>
             </label>
 
-            <button id="btn-enter-game" class="lobby-btn">MASUK KE DUNIA</button>
+            <button id="btn-enter-game" class="lobby-btn">MASUK / BUAT DUNIA</button>
+
+            <div style="font-size:9px; color:#94a3b8; margin-top:12px; text-align:left; border-top:1px dashed #475569; padding-top:6px;">
+                <strong>DAFTAR DUNIA PUBLIK TERSIMPAN:</strong>
+            </div>
+            <div class="world-list-box" id="saved-worlds-list">
+                <!-- Daftar dunia akan diisi otomatis -->
+            </div>
         </div>
     </div>
 
@@ -593,7 +650,8 @@
         <div id="sleep-overlay"></div>
 
         <div id="hud-info">
-            <div><strong>MINECRAFT EDU + ROBOT</strong></div>
+            <div><strong>MINECRAFT EDU + SCRATCH ROBOT</strong></div>
+            <div id="world-display" style="color:#2ecc71; font-weight:bold;">Dunia: Dunia A</div>
             <div id="seed-display">Seed: 999</div>
             <div id="coords-display">Posisi: X:0 Y:0 Z:0</div>
             <div id="block-focused">Membidik: -</div>
@@ -603,8 +661,8 @@
 
         <div id="hud-controls">
             <button class="hud-btn" id="btn-inventory-toggle">INVENTORY (E)</button>
-            <button class="hud-btn" id="btn-save-world">SIMPAN</button>
-            <button class="hud-btn" id="btn-load-world">MUAT</button>
+            <button class="hud-btn" id="btn-save-world">SIMPAN KE CLOUD</button>
+            <button class="hud-btn" id="btn-load-world">MUAT CLOUD</button>
         </div>
 
         <div id="action-buttons-container">
@@ -746,6 +804,33 @@
     </div>
 
     <script>
+        // Inisialisasi Firebase Firestore untuk Realtime Cloud World Sync
+        let db = null;
+        let auth = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'minecraft-world-test';
+
+        function initCloudSync() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    db = firebase.firestore();
+                    auth = firebase.auth();
+                    
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        auth.signInWithCustomToken(__initial_auth_token).catch(() => auth.signInAnonymously());
+                    } else {
+                        auth.signInAnonymously();
+                    }
+                }
+            } catch(e) {
+                console.log("Firebase fallback to LocalStorage", e);
+            }
+        }
+        initCloudSync();
+
         // Data Blok Minecraft
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
@@ -764,6 +849,7 @@
 
         let isMobileMode = false;
         let myUsername = "Steve";
+        let currentWorldName = "Dunia A";
         let numericSeed = 999;
 
         let scene, camera, renderer, clock;
@@ -895,13 +981,11 @@
         let lastValidTargetInfo = null;
         let highlightBox;
         
-        // 1 Hari Game = 24 Menit Waktu Nyata
         let gameTime = Math.PI / 4; 
         const GAME_DAY_SECONDS = 1440; 
         let currentHourNumber = 6;
         let currentDayNumber = 1;
 
-        // Variabel Khusus Touch Usap Menoleh Mobile
         let touchLookId = null;
         let lastTouchX = 0;
         let lastTouchY = 0;
@@ -910,10 +994,40 @@
             const t = document.getElementById('toast-notification');
             t.innerText = msg;
             t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 2200);
+            setTimeout(() => { t.style.display = 'none'; }, 2500);
         }
 
-        document.getElementById('btn-enter-game').addEventListener('click', () => {
+        // Render Daftar Dunia Tersimpan di Lobi
+        function renderSavedWorldsList() {
+            const container = document.getElementById('saved-worlds-list');
+            container.innerHTML = '';
+            
+            const defaultWorlds = ["Dunia A", "Dunia B", "Dunia Kreatif"];
+            const localSaved = JSON.parse(localStorage.getItem('minecraft_saved_world_names') || '[]');
+            const allWorlds = Array.from(new Set([...defaultWorlds, ...localSaved]));
+
+            allWorlds.forEach(wName => {
+                const item = document.createElement('div');
+                item.className = 'world-item';
+                const safeUrl = `arsyilsalman219-cloud.github.io/minecraft-web-test/${encodeURIComponent(wName)}`;
+                item.innerHTML = `
+                    <div>
+                        <strong style="color:#60a5fa;">🌍 ${wName}</strong>
+                        <div class="world-url-sim">${safeUrl}</div>
+                    </div>
+                    <button class="hud-btn" style="background:#2ecc71; font-size:8px;">MASUK</button>
+                `;
+                item.onclick = () => {
+                    document.getElementById('world-name-input').value = wName;
+                    enterGameWorld();
+                };
+                container.appendChild(item);
+            });
+        }
+        renderSavedWorldsList();
+
+        function enterGameWorld() {
+            currentWorldName = document.getElementById('world-name-input').value.trim() || "Dunia A";
             myUsername = document.getElementById('username-input').value.trim() || "Steve";
             isMobileMode = document.getElementById('mobile-mode-checkbox').checked;
             
@@ -921,6 +1035,14 @@
             numericSeed = 0;
             for (let i = 0; i < seedStr.length; i++) numericSeed += seedStr.charCodeAt(i);
 
+            // Simpan nama dunia ke daftar tersimpan
+            const localSaved = JSON.parse(localStorage.getItem('minecraft_saved_world_names') || '[]');
+            if (!localSaved.includes(currentWorldName)) {
+                localSaved.push(currentWorldName);
+                localStorage.setItem('minecraft_saved_world_names', JSON.stringify(localSaved));
+            }
+
+            document.getElementById('world-display').innerText = `Dunia: ${currentWorldName}`;
             document.getElementById('seed-display').innerText = `Seed: ${seedStr}`;
             document.getElementById('lobby-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
@@ -940,8 +1062,14 @@
             initBlocklyWorkspace();
             setupInputListeners();
             setupMobileTouchLook();
+            
+            // Coba Muat Otomatis dari Firestore Cloud jika ada
+            loadWorldFromCloudOrLocal();
+
             animate();
-        });
+        }
+
+        document.getElementById('btn-enter-game').addEventListener('click', enterGameWorld);
 
         function initThreeJS() {
             scene = new THREE.Scene();
@@ -1376,6 +1504,91 @@
             showToast(`Blok "${name}" berhasil disimpan!`);
             buildInventoryUI();
             toggleCustomBlockCreator();
+        }
+
+        // --- REALTIME CLOUD / MULTI-WORLD SYNC LOGIC ---
+        function saveWorldToCloudOrLocal() {
+            const saveData = [];
+            for (const key in voxelMap) {
+                saveData.push({ pos: key, id: voxelMap[key].userData.id });
+            }
+
+            const cleanName = encodeURIComponent(currentWorldName);
+            
+            // Simpan ke LocalStorage sebagai Fallback
+            localStorage.setItem(`minecraft_world_${cleanName}`, JSON.stringify(saveData));
+
+            // Simpan ke Firestore jika terhubung
+            if (db) {
+                try {
+                    const worldDocRef = db.doc(`artifacts/${appId}/public/data/worlds/${cleanName}`);
+                    worldDocRef.set({
+                        worldName: currentWorldName,
+                        lastUpdatedBy: myUsername,
+                        seed: numericSeed,
+                        blocks: JSON.stringify(saveData),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        showToast(`Dunia "${currentWorldName}" Berhasil Disimpan ke Cloud!`);
+                    }).catch(err => {
+                        showToast(`Disimpan ke Local: "${currentWorldName}"`);
+                    });
+                } catch(e) {
+                    showToast(`Disimpan ke Local Storage!`);
+                }
+            } else {
+                showToast(`Disimpan ke Local Storage!`);
+            }
+        }
+
+        function loadWorldFromCloudOrLocal() {
+            const cleanName = encodeURIComponent(currentWorldName);
+
+            const applySaveData = (saveData) => {
+                for (const key in voxelMap) {
+                    const obj = voxelMap[key];
+                    scene.remove(obj);
+                    if (obj.isGroup) obj.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+                }
+                blocksGroup = [];
+                voxelMap = {};
+                saveData.forEach(item => {
+                    const coords = item.pos.split(',').map(Number);
+                    createBlockMesh(coords[0], coords[1], coords[2], item.id);
+                });
+            };
+
+            if (db) {
+                try {
+                    const worldDocRef = db.doc(`artifacts/${appId}/public/data/worlds/${cleanName}`);
+                    worldDocRef.get().then(doc => {
+                        if (doc.exists && doc.data().blocks) {
+                            const saveData = JSON.parse(doc.data().blocks);
+                            applySaveData(saveData);
+                            showToast(`Dunia "${currentWorldName}" Dimuat dari Cloud!`);
+                        } else {
+                            // Coba LocalStorage
+                            const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
+                            if (raw) {
+                                applySaveData(JSON.parse(raw));
+                                showToast(`Dunia "${currentWorldName}" Dimuat dari Penyimpanan Lokal!`);
+                            }
+                        }
+                    }).catch(() => {
+                        const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
+                        if (raw) applySaveData(JSON.parse(raw));
+                    });
+                } catch(e) {
+                    const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
+                    if (raw) applySaveData(JSON.parse(raw));
+                }
+            } else {
+                const raw = localStorage.getItem(`minecraft_world_${cleanName}`);
+                if (raw) {
+                    applySaveData(JSON.parse(raw));
+                    showToast(`Dunia "${currentWorldName}" Dimuat dari Penyimpanan Lokal!`);
+                }
+            }
         }
 
         // --- SISTEM PEMROGRAMAN BALOK VISUAL SCRATCH (GOOGLE BLOCKLY INTEGRATION) ---
@@ -1847,7 +2060,6 @@
             showToast("Berdiri dan melompat dari kursi!");
         }
 
-        // SET UP PENANGANAN TOUCH USAP MENOLEH MOBILE
         function setupMobileTouchLook() {
             const canvasEl = renderer.domElement;
 
@@ -2146,38 +2358,12 @@
 
             document.getElementById('btn-save-world').addEventListener('click', (e) => {
                 e.stopPropagation();
-                const saveData = [];
-                for (const key in voxelMap) {
-                    saveData.push({ pos: key, id: voxelMap[key].userData.id });
-                }
-                localStorage.setItem('minecraft_pe_save', JSON.stringify(saveData));
-                showToast("Dunia berhasil disimpan!");
+                saveWorldToCloudOrLocal();
             });
 
             document.getElementById('btn-load-world').addEventListener('click', (e) => {
                 e.stopPropagation();
-                const raw = localStorage.getItem('minecraft_pe_save');
-                if (!raw) {
-                    showToast("Tidak ada data simpanan ditemukan!");
-                    return;
-                }
-                try {
-                    const saveData = JSON.parse(raw);
-                    for (const key in voxelMap) {
-                        const obj = voxelMap[key];
-                        scene.remove(obj);
-                        if (obj.isGroup) obj.traverse(child => { if (child.geometry) child.geometry.dispose(); });
-                    }
-                    blocksGroup = [];
-                    voxelMap = {};
-                    saveData.forEach(item => {
-                        const coords = item.pos.split(',').map(Number);
-                        createBlockMesh(coords[0], coords[1], coords[2], item.id);
-                    });
-                    showToast("Dunia berhasil dimuat!");
-                } catch(err) {
-                    showToast("Gagal memuat dunia!");
-                }
+                loadWorldFromCloudOrLocal();
             });
         }
 
