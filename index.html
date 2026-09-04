@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft PE Hybrid Edition - File Import/Export Edition</title>
+    <title>Minecraft PE Hybrid Edition - Mobile Chat UI Update</title>
     <!-- Three.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Google Blockly Library for Scratch-style visual block programming -->
@@ -178,12 +178,13 @@
             background: rgba(0,0,0,0.65);
             border: 2px solid #666;
             color: white;
-            padding: 5px 10px;
+            padding: 6px 12px;
             font-size: 9px;
             cursor: pointer;
             border-radius: 4px;
             font-family: monospace;
             font-weight: bold;
+            touch-action: none;
         }
         .hud-btn:active {
             background: #27ae60;
@@ -233,14 +234,14 @@
         /* Chatbox */
         #chat-container {
             position: absolute;
-            top: 10px;
+            top: 50px;
             right: 10px;
-            width: 260px;
-            max-width: 45vw;
-            height: 130px;
-            background: rgba(0, 0, 0, 0.55);
-            border: 2px solid #555;
-            border-radius: 4px;
+            width: 280px;
+            max-width: 50vw;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 2px solid #a855f7;
+            border-radius: 6px;
             z-index: 100;
             display: none;
             flex-direction: column;
@@ -249,14 +250,15 @@
         }
         #chat-messages {
             flex-grow: 1;
-            padding: 5px;
+            padding: 6px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
         }
         .chat-msg { word-wrap: break-word; text-shadow: 1px 1px 0 #000; }
         .chat-user { color: #3498db; font-weight: bold; }
+        .chat-bot { color: #a855f7; font-weight: bold; }
         #chat-input-row { display: flex; border-top: 1px solid #555; }
         #chat-input {
             flex-grow: 1;
@@ -269,7 +271,7 @@
             outline: none;
         }
         #chat-send {
-            background: #2ecc71;
+            background: #a855f7;
             border: none;
             color: white;
             padding: 0 10px;
@@ -584,7 +586,7 @@
             max-width: 95vw;
             height: 85vh;
             background: #111827;
-            border: 4px solid #3b82f6;
+            border: 4px solid #a855f7;
             border-radius: 12px;
             z-index: 300;
             color: white;
@@ -598,11 +600,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid #3b82f6;
+            border-bottom: 3px solid #a855f7;
         }
         .code-panel-header h3 {
             margin: 0;
-            color: #60a5fa;
+            color: #c084fc;
             font-size: 14px;
             letter-spacing: 1px;
             display: flex;
@@ -639,8 +641,8 @@
 
     <div id="lobby-container">
         <div class="lobby-card">
-            <h1>MENU MULAI (IMPORT / EXPORT JS)</h1>
-            <p>BAGIKAN DUNIA & CUSTOM BLOCK DENGAN FILE .JS</p>
+            <h1>MENU MULAI (CHAT MOBILE UI UPDATE)</h1>
+            <p>SISTEM MULTI-WORLD IMPORT/EXPORT & AI ROBOT ASSISTANT</p>
             
             <label class="lobby-field-label">NAMA DUNIA:</label>
             <input type="text" id="world-name-input" class="lobby-input" value="Dunia A" placeholder="Misal: Dunia A">
@@ -665,17 +667,18 @@
         <div id="sleep-overlay"></div>
 
         <div id="hud-info">
-            <div><strong>MINECRAFT EDU + SCRATCH ROBOT</strong></div>
+            <div><strong>MINECRAFT EDU + AI ROBOT</strong></div>
             <div id="world-display" style="color:#2ecc71; font-weight:bold;">Dunia: Dunia A</div>
             <div id="seed-display">Seed: 999</div>
             <div id="coords-display">Posisi: X:0 Y:0 Z:0</div>
             <div id="block-focused">Membidik: -</div>
             <div id="time-display">Waktu: 06:00 (Pagi)</div>
-            <div id="robot-status-hud" style="color: #60a5fa; margin-top:3px; display:none; font-weight:bold;">Baterai Robot: 100%</div>
+            <div id="robot-status-hud" style="color: #c084fc; margin-top:3px; display:none; font-weight:bold;">Baterai Robot: 100%</div>
         </div>
 
         <div id="hud-controls">
             <button class="hud-btn" id="btn-inventory-toggle">INVENTORY (E)</button>
+            <button class="hud-btn" id="btn-chat-toggle" style="background:#a855f7;">CHAT</button>
             <button class="hud-btn" id="btn-open-settings" style="background:#3b82f6;">SETTINGS (ESC)</button>
         </div>
 
@@ -695,7 +698,7 @@
         <div id="chat-container">
             <div id="chat-messages"></div>
             <div id="chat-input-row">
-                <input type="text" id="chat-input" placeholder="Tekan Alt+C untuk tutup..." maxlength="50">
+                <input type="text" id="chat-input" placeholder="Tekan Alt+C untuk tutup..." maxlength="80">
                 <button id="chat-send">KIRIM</button>
             </div>
         </div>
@@ -809,6 +812,9 @@
 
         <!-- XML TOOLBOX DEFINISI KATEGORI BALOK SCRATCH -->
         <xml id="toolbox" style="display: none">
+            <category name="🤖 AI & Assistant" colour="#A855F7">
+                <block type="ai_chat_response"></block>
+            </category>
             <category name="Kontrol & Loop" colour="#FFAB19">
                 <block type="control_forever"></block>
                 <block type="control_if"></block>
@@ -867,12 +873,13 @@
         const customBlocksDatabase = {};
         const mobsList = [];
 
-        // Data Robot
+        // Data Robot & Status AI
         let robotMeshGroup = null;
         let robotData = {
             position: new THREE.Vector3(2, 1, 2),
             battery: 85,
-            isRunningProgram: false
+            isRunningProgram: false,
+            isAiChatEnabled: false
         };
 
         let isSitting = false;
@@ -1159,7 +1166,7 @@
             
             const metalMat = new THREE.MeshLambertMaterial({ color: 0xbdc3c7 });
             const darkMetalMat = new THREE.MeshLambertMaterial({ color: 0x34495e });
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x2ecc71 });
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
 
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), metalMat);
             body.position.y = 0.85;
@@ -1476,6 +1483,129 @@
             toggleCustomBlockCreator();
         }
 
+        // --- GEMINI AI CHAT & COMMAND PROCESSOR ---
+        async function callGeminiApiForRobot(userQuery) {
+            const apiKey = "";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{
+                        text: `Kamu adalah Robot Asisten pintar di dalam game Minecraft PE. Tugasmu adalah membalas obrolan pemain dengan ramah, singkat, dan alami (maksimal 20 kata dalam Bahasa Indonesia).
+Selain itu, kamu harus menganalisis apakah pesan user mengandung perintah aksi/gerakan untuk robot.
+
+Opsi aksi yang tersedia:
+- "move": robot bergerak maju sejumlah blok (value = jumlah blok/langkah, default 5 jika tidak disebutkan).
+- "turn_left": robot berputar ke kiri (value = derajat, default 90).
+- "turn_right": robot berputar ke kanan (value = derajat, default 90).
+- "find_charger": robot mencari stasiun charger dan mengisi daya.
+- "find_bed": robot mencari tempat tidur.
+- "sleep": robot tidur sementara.
+- "none": pesan obrolan biasa (tidak ada aksi).
+
+Kembalikan respon JSON persis dengan format ini:
+{
+  "reply": "Teks balasan ramah kamu untuk dimunculkan di chat",
+  "action": "move" | "turn_left" | "turn_right" | "find_charger" | "find_bed" | "sleep" | "none",
+  "value": 5
+}`
+                    }]
+                },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            reply: { type: "STRING" },
+                            action: { type: "STRING" },
+                            value: { type: "NUMBER" }
+                        },
+                        required: ["reply", "action"]
+                    }
+                }
+            };
+
+            let delay = 1000;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (rawText) {
+                            return JSON.parse(rawText);
+                        }
+                    }
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+            }
+
+            return {
+                reply: "Bip bop! Maaf, sistem jaringan AI saya sedang lambat.",
+                action: "none",
+                value: 0
+            };
+        }
+
+        async function processAiChatInput(userText) {
+            const chatBox = document.getElementById('chat-messages');
+            
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'chat-msg';
+            thinkingDiv.id = 'robot-thinking-msg';
+            thinkingDiv.innerHTML = `<span class="chat-bot">🤖 Robot:</span> <i style="color:#aaa;">sedang berpikir...</i>`;
+            chatBox.appendChild(thinkingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const res = await callGeminiApiForRobot(userText);
+
+            const existingMsg = document.getElementById('robot-thinking-msg');
+            if (existingMsg) existingMsg.remove();
+
+            chatBox.innerHTML += `<div class="chat-msg"><span class="chat-bot">🤖 Robot:</span> ${res.reply}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            playSound('beep');
+
+            if (res.action && res.action !== 'none') {
+                showToast(`🤖 Robot menjalankan perintah: ${res.action.toUpperCase()} (${res.value || ''})`);
+                await executeAiAction(res.action, res.value || 5);
+            }
+        }
+
+        async function executeAiAction(action, val) {
+            if (!robotMeshGroup) return;
+
+            if (action === 'move') {
+                const steps = val || 5;
+                for (let i = 0; i < steps; i++) {
+                    robotMeshGroup.position.x += Math.sin(robotMeshGroup.rotation.y) * 0.5;
+                    robotMeshGroup.position.z += Math.cos(robotMeshGroup.rotation.y) * 0.5;
+                    playSound('beep');
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            } else if (action === 'turn_left') {
+                const deg = val || 90;
+                robotMeshGroup.rotation.y += (deg * Math.PI / 180);
+                playSound('beep');
+            } else if (action === 'turn_right') {
+                const deg = val || 90;
+                robotMeshGroup.rotation.y -= (deg * Math.PI / 180);
+                playSound('beep');
+            } else if (action === 'find_charger') {
+                findNearestCharger();
+            } else if (action === 'find_bed') {
+                findNearestBed();
+            } else if (action === 'sleep') {
+                showToast("Robot tidur...");
+            }
+        }
+
         // --- SISTEM SETTINGS MODAL & IMPORT / EXPORT FILE .JS ---
         function toggleSettingsModal(show) {
             if (show === undefined) {
@@ -1563,7 +1693,6 @@
                             document.getElementById('world-display').innerText = `Dunia: ${currentWorldName}`;
                         }
 
-                        // Load Custom Blocks terlebih dahulu
                         if (data.customBlocks && Array.isArray(data.customBlocks)) {
                             data.customBlocks.forEach(cb => {
                                 const newCanvas = document.createElement('canvas');
@@ -1594,7 +1723,6 @@
                             buildInventoryUI();
                         }
 
-                        // Load Peta/Map
                         if (data.mapData && Array.isArray(data.mapData)) {
                             for (const key in voxelMap) {
                                 const obj = voxelMap[key];
@@ -1618,7 +1746,7 @@
                     }
                 } catch(err) {
                     console.error(err);
-                    showToast("Gagal membisa/impor file .JS!");
+                    showToast("Gagal membaca/impor file .JS!");
                 }
             };
 
@@ -1630,6 +1758,17 @@
         let blocklyWorkspace = null;
 
         function initBlocklyWorkspace() {
+            Blockly.Blocks['ai_chat_response'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("🤖 AI Chat Respons & Perintah");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(280);
+                    this.setTooltip("Robot akan membalas chat dan merespons perintah otomatis seperti 'jalan 5 block'");
+                }
+            };
+
             Blockly.Blocks['control_forever'] = {
                 init: function() {
                     this.appendDummyInput().appendField("forever");
@@ -1806,7 +1945,8 @@
 
             const sampleXmlText = `
             <xml xmlns="https://developers.google.com/blockly/xml">
-              <block type="control_forever" x="30" y="40">
+              <block type="ai_chat_response" x="30" y="30"></block>
+              <block type="control_forever" x="30" y="110">
                 <statement name="DO">
                   <block type="control_if">
                     <value name="CONDITION">
@@ -1827,16 +1967,18 @@
                   </block>
                 </statement>
               </block>
-              <block type="action_move_steps" x="320" y="40">
-                <field name="STEPS">10</field>
-              </block>
-              <block type="action_sleep" x="320" y="120"></block>
             </xml>
             `;
             try {
                 const xml = Blockly.utils.xml.textToDom(sampleXmlText);
                 Blockly.Xml.domToWorkspace(xml, blocklyWorkspace);
             } catch(e) {}
+        }
+
+        function checkIsAiChatBlockActive() {
+            if (!blocklyWorkspace) return false;
+            const blocks = blocklyWorkspace.getAllBlocks(false);
+            return blocks.some(b => b.type === 'ai_chat_response');
         }
 
         function toggleRobotCodePanel() {
@@ -1856,7 +1998,14 @@
         async function saveAndRunRobotProgram() {
             if (!blocklyWorkspace) return;
             playSound('beep');
-            showToast("Memproses Program Balok Scratch Robot...");
+
+            robotData.isAiChatEnabled = checkIsAiChatBlockActive();
+
+            if (robotData.isAiChatEnabled) {
+                showToast("🤖 AI Chat Respons Aktif! Robot akan membalas chat dan perintah Anda.");
+            } else {
+                showToast("Memproses Program Balok Robot...");
+            }
 
             if (isRobotCodeOpen) toggleRobotCodePanel();
 
@@ -1866,7 +2015,6 @@
             for (let block of topBlocks) {
                 await runBlockRecursive(block);
             }
-            showToast("Selesai menjalankan eksekusi Balok Robot!");
         }
 
         async function runBlockRecursive(block) {
@@ -1874,7 +2022,11 @@
 
             const type = block.type;
 
-            if (type === 'action_move_steps') {
+            if (type === 'ai_chat_response') {
+                robotData.isAiChatEnabled = true;
+                showToast("🤖 Modul AI Chat Respons Diaktifkan!");
+                await new Promise(r => setTimeout(r, 200));
+            } else if (type === 'action_move_steps') {
                 const steps = parseFloat(block.getFieldValue('STEPS')) || 10;
                 const dist = steps * 0.05;
                 robotMeshGroup.position.x += Math.sin(robotMeshGroup.rotation.y) * dist;
@@ -2395,6 +2547,11 @@
             btnJumpEl.addEventListener('click', (e) => { e.stopPropagation(); jump(); });
 
             document.getElementById('btn-inventory-toggle').addEventListener('click', (e) => { e.stopPropagation(); toggleInventory(); });
+            
+            document.getElementById('btn-chat-toggle').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleChatBox();
+            });
 
             document.getElementById('btn-open-settings').addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2466,7 +2623,7 @@
             }
         }
 
-        document.getElementById('chat-send').addEventListener('click', (e) => {
+        document.getElementById('chat-send').addEventListener('click', async (e) => {
             e.stopPropagation();
             const input = document.getElementById('chat-input');
             const txt = input.value.trim();
@@ -2475,8 +2632,18 @@
                 box.innerHTML += `<div class="chat-msg"><span class="chat-user">${myUsername}:</span> ${txt}</div>`;
                 box.scrollTop = box.scrollHeight;
                 input.value = '';
+
+                if (checkIsAiChatBlockActive() || robotData.isAiChatEnabled) {
+                    await processAiChatInput(txt);
+                }
             }
-            toggleChatBox();
+        });
+
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('chat-send').click();
+            }
         });
 
         function buildHotbarUI() {
