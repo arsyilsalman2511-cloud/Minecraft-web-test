@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft PE Hybrid Edition - Mobile Chat UI Update</title>
-    <!-- Three.js Engine -->
+    <title>Minecraft PE Hybrid Edition - Complete Edition</title>
+    <!-- Engine Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Google Blockly Library for Scratch-style visual block programming -->
+    <!-- Pustaka Google Blockly untuk pemrograman visual balok Scratch -->
     <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <!-- Pustaka JSZip untuk mengimpor file blok .zip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -131,7 +133,7 @@
             box-shadow: none;
         }
 
-        /* Crosshair */
+        /* Bidikan Crosshair */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -150,7 +152,7 @@
         #crosshair::before { top: 8px; left: 0; width: 18px; height: 2px; }
         #crosshair::after { top: 0; left: 8px; width: 2px; height: 18px; }
 
-        /* HUD Info Atas */
+        /* HUD Informasi Atas */
         #hud-info {
             position: absolute;
             top: 10px;
@@ -334,7 +336,7 @@
         }
         #btn-jump { bottom: 100px; right: 105px; }
 
-        /* Hotbar */
+        /* Hotbar Slot */
         #hotbar-container {
             position: absolute;
             bottom: 15px;
@@ -381,7 +383,7 @@
             margin-top: 1px;
         }
 
-        /* Inventory Panel & Custom Block Creator */
+        /* Panel Inventaris & Pembuat Blok Kustom */
         #inventory-panel {
             display: none;
             position: absolute;
@@ -408,11 +410,68 @@
             border-bottom: 2px dashed #2ecc71;
             padding-bottom: 6px;
         }
+
+        /* UI Tab Folder Inventaris */
+        .inv-tabs-container {
+            display: flex;
+            gap: 4px;
+            margin: 10px 0 8px 0;
+        }
+        .inv-tab-btn {
+            flex: 1;
+            padding: 7px 2px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            color: #94a3b8;
+            font-size: 8px;
+            font-family: monospace;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .inv-tab-btn.active {
+            background: #2563eb;
+            border-color: #60a5fa;
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Subfolder untuk Tab Imported */
+        .imported-subfolders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .subfolder-card {
+            background: #0f172a;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .subfolder-header {
+            padding: 6px 10px;
+            background: #1e293b;
+            font-size: 9px;
+            font-weight: bold;
+            color: #60a5fa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subfolder-header:hover {
+            background: #334155;
+        }
+
         .inv-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin-bottom: 10px;
+            min-height: 80px;
         }
         .inv-item-card {
             background: #0f172a;
@@ -516,7 +575,7 @@
             transition: opacity 1s ease;
         }
 
-        /* --- PANEL SETTINGS (IMPORT / EXPORT MODAL) --- */
+        /* --- Panel Pengaturan Settings (Import/Export Modal) --- */
         #settings-modal {
             display: none;
             position: absolute;
@@ -545,7 +604,7 @@
         .settings-btn-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             margin: 18px 0;
         }
         .settings-action-btn {
@@ -574,8 +633,12 @@
             background: #e67e22;
             color: white;
         }
+        #btn-import-zip {
+            background: #8b5cf6;
+            color: white;
+        }
 
-        /* --- PANEL SCRATCH BLOCK EDITOR (GOOGLE BLOCKLY) --- */
+        /* --- Panel Editor Kode Robot Scratch (Google Blockly) --- */
         #robot-code-panel {
             display: none;
             position: absolute;
@@ -641,8 +704,8 @@
 
     <div id="lobby-container">
         <div class="lobby-card">
-            <h1>MENU MULAI (CHAT MOBILE UI UPDATE)</h1>
-            <p>SISTEM MULTI-WORLD IMPORT/EXPORT & AI ROBOT ASSISTANT</p>
+            <h1>MENU MULAI (MINECRAFT HYBRID)</h1>
+            <p>SISTEM IMPORT/EXPORT DUNIA & AI ROBOT SCRATCH PROGRAMMING</p>
             
             <label class="lobby-field-label">NAMA DUNIA:</label>
             <input type="text" id="world-name-input" class="lobby-input" value="Dunia A" placeholder="Misal: Dunia A">
@@ -713,7 +776,7 @@
 
         <div id="hotbar-container"></div>
 
-        <!-- Panel Inventory -->
+        <!-- Panel Inventaris -->
         <div id="inventory-panel">
             <h2>Inventaris & Pembuat Blok</h2>
             
@@ -770,16 +833,22 @@
                 <button class="close-btn" onclick="saveCustomBlock()" style="background:#2ecc71;">SIMPAN KE HOTBAR</button>
             </div>
 
-            <div style="font-size:9px; color:#94a3b8; margin:8px 0 4px 0;">DAFTAR BLOK TERSEDIA:</div>
+            <!-- Tab Folder Inventaris -->
+            <div class="inv-tabs-container">
+                <button class="inv-tab-btn active" id="tab-from-game" onclick="switchInventoryTab('from_game')">📂 From Game</button>
+                <button class="inv-tab-btn" id="tab-custom-block" onclick="switchInventoryTab('custom_block')">📁 Custom Block</button>
+                <button class="inv-tab-btn" id="tab-imported" onclick="switchInventoryTab('imported')">📦 Imported</button>
+            </div>
+
             <div class="inv-grid" id="inv-items-list"></div>
 
             <button class="close-btn" onclick="toggleInventory()">TUTUP (E)</button>
         </div>
 
-        <!-- PANEL SETTINGS (IMPORT & EXPORT FILE .JS) -->
+        <!-- PANEL SETTINGS (IMPORT & EXPORT FILE .JS / .ZIP) -->
         <div id="settings-modal">
             <h2>PENGATURAN DUNIA</h2>
-            <p style="font-size:9px; color:#94a3b8; margin-top:2px;">Import & Export peta serta custom block menggunakan file .JS</p>
+            <p style="font-size:9px; color:#94a3b8; margin-top:2px;">Import & Export peta (.JS) atau Blok Kustom (.ZIP)</p>
             
             <div class="settings-btn-group">
                 <button id="btn-export-js" class="settings-action-btn" onclick="exportWorldToJsFile()">
@@ -788,10 +857,14 @@
                 <button id="btn-import-js" class="settings-action-btn" onclick="triggerImportJsFile()">
                     📤 IMPORT DUNIA (.JS)
                 </button>
+                <button id="btn-import-zip" class="settings-action-btn" onclick="triggerImportZipFile()">
+                    📦 IMPORT BLOCK (.ZIP)
+                </button>
             </div>
 
-            <!-- Hidden File Input untuk Import -->
+            <!-- Hidden File Inputs -->
             <input type="file" id="input-import-file" accept=".js" style="display: none;" onchange="handleJsFileImport(event)">
+            <input type="file" id="input-import-zip" accept=".zip" style="display: none;" onchange="handleZipBlockImport(event)">
 
             <button class="close-btn" onclick="toggleSettingsModal(false)" style="background:#64748b;">TUTUP (ESC)</button>
         </div>
@@ -844,7 +917,7 @@
     </div>
 
     <script>
-        // Data Blok Minecraft
+        // Data Blok Minecraft bawaan
         const minecraftBlocks = [
             { id: 1, name: "Rumput Hijau", type: "grass", color: 0x5c9e32, topColor: 0x5c9e32, sideColor: 0x866043 },
             { id: 2, name: "Tanah", type: "dirt", color: 0x866043 },
@@ -871,9 +944,13 @@
         let activeHotbarIndex = 0;
         let selectedItem = { type: 'block', id: 1 };
         const customBlocksDatabase = {};
+        const importedSubfoldersDatabase = {}; // { 'Folder_Zip_A': [blockObj, ...] }
         const mobsList = [];
 
-        // Data Robot & Status AI
+        // Tab Folder Inventaris Aktif
+        let currentInventoryTab = 'from_game';
+
+        // Data Robot & AI Status
         let robotMeshGroup = null;
         let robotData = {
             position: new THREE.Vector3(2, 1, 2),
@@ -1475,7 +1552,8 @@
                 flowRange: flowRange,
                 canvasDataUrl: canvasCopy.toDataURL(),
                 canvas: canvasCopy,
-                color: 0x3b82f6
+                color: 0x3b82f6,
+                source: 'custom'
             };
 
             showToast(`Blok "${name}" berhasil disimpan!`);
@@ -1606,7 +1684,7 @@ Kembalikan respon JSON persis dengan format ini:
             }
         }
 
-        // --- SISTEM SETTINGS MODAL & IMPORT / EXPORT FILE .JS ---
+        // --- SISTEM MODAL PENGATURAN & IMPORT/EXPORT .JS / .ZIP ---
         function toggleSettingsModal(show) {
             if (show === undefined) {
                 isSettingsOpen = !isSettingsOpen;
@@ -1640,7 +1718,9 @@ Kembalikan respon JSON persis dengan format ini:
                     viscosity: cb.viscosity,
                     flowRange: cb.flowRange,
                     canvasDataUrl: cb.canvasDataUrl || (cb.canvas ? cb.canvas.toDataURL() : null),
-                    color: cb.color
+                    color: cb.color,
+                    source: cb.source || 'custom',
+                    folderName: cb.folderName || null
                 });
             }
 
@@ -1672,6 +1752,10 @@ Kembalikan respon JSON persis dengan format ini:
 
         function triggerImportJsFile() {
             document.getElementById('input-import-file').click();
+        }
+
+        function triggerImportZipFile() {
+            document.getElementById('input-import-zip').click();
         }
 
         function handleJsFileImport(event) {
@@ -1709,7 +1793,7 @@ Kembalikan respon JSON persis dengan format ini:
                                     img.src = cb.canvasDataUrl;
                                 }
 
-                                customBlocksDatabase[cb.id] = {
+                                const blockObj = {
                                     id: cb.id,
                                     name: cb.name,
                                     type: cb.type,
@@ -1717,8 +1801,22 @@ Kembalikan respon JSON persis dengan format ini:
                                     flowRange: cb.flowRange,
                                     canvasDataUrl: cb.canvasDataUrl,
                                     canvas: newCanvas,
-                                    color: cb.color || 0x3b82f6
+                                    color: cb.color || 0x3b82f6,
+                                    source: cb.source || 'imported',
+                                    folderName: cb.folderName || 'General Import'
                                 };
+
+                                customBlocksDatabase[cb.id] = blockObj;
+
+                                if (blockObj.source === 'imported') {
+                                    const fName = blockObj.folderName;
+                                    if (!importedSubfoldersDatabase[fName]) {
+                                        importedSubfoldersDatabase[fName] = [];
+                                    }
+                                    if (!importedSubfoldersDatabase[fName].some(b => b.id === cb.id)) {
+                                        importedSubfoldersDatabase[fName].push(blockObj);
+                                    }
+                                }
                             });
                             buildInventoryUI();
                         }
@@ -1752,6 +1850,268 @@ Kembalikan respon JSON persis dengan format ini:
 
             reader.readAsText(file);
             event.target.value = '';
+        }
+
+        async function handleZipBlockImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                if (typeof JSZip === 'undefined') {
+                    showToast("Library JSZip belum dimuat!");
+                    return;
+                }
+
+                // Nama file ZIP tanpa ekstensi untuk folder name
+                const zipFileName = file.name.replace(/\.[^/.]+$/, "");
+
+                const zip = await JSZip.loadAsync(file);
+
+                // Cari SEMUA file .JSON di dalam ZIP (bisa main.json, block.json, blocks.json, dll)
+                let jsonEntries = [];
+                zip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.json')) {
+                        jsonEntries.push(zipEntry);
+                    }
+                });
+
+                if (jsonEntries.length === 0) {
+                    showToast("File .JSON tidak ditemukan di dalam ZIP!");
+                    return;
+                }
+
+                let blocksToImport = [];
+
+                // Parsing seluruh file JSON yang ditemukan
+                for (const jsonEntry of jsonEntries) {
+                    try {
+                        const jsonText = await jsonEntry.async("text");
+                        const parsedData = JSON.parse(jsonText);
+
+                        if (Array.isArray(parsedData)) {
+                            // Format: [ { name: "Block 1", ... }, { name: "Block 2", ... } ]
+                            blocksToImport.push(...parsedData);
+                        } else if (parsedData && Array.isArray(parsedData.blocks)) {
+                            // Format: { blocks: [ { ... }, { ... } ] }
+                            blocksToImport.push(...parsedData.blocks);
+                        } else if (parsedData && typeof parsedData === 'object') {
+                            // Format Single Object: { name: "Block Single", ... }
+                            blocksToImport.push(parsedData);
+                        }
+                    } catch (e) {
+                        console.warn("Gagal parse file json:", jsonEntry.name, e);
+                    }
+                }
+
+                if (blocksToImport.length === 0) {
+                    showToast("Tidak ditemukan definisi blok yang valid dalam JSON!");
+                    return;
+                }
+
+                let importedCount = 0;
+
+                for (const blockData of blocksToImport) {
+                    const newId = 900 + Object.keys(customBlocksDatabase).length;
+                    const blockName = blockData.name || blockData.id || `Block_${newId}`;
+                    const blockType = blockData.type || "stone";
+
+                    // Cari tekstur spesifik jika dicantumkan di JSON
+                    let textureFile = null;
+                    if (blockData.texture) {
+                        const targetTexName = blockData.texture.toLowerCase().split('/').pop();
+                        zip.forEach((relativePath, zipEntry) => {
+                            if (!zipEntry.dir && relativePath.toLowerCase().endsWith(targetTexName)) {
+                                textureFile = zipEntry;
+                            }
+                        });
+                    }
+
+                    // Fallback jika tidak dicantumkan/ditemukan: ambil gambar acak/pertama di zip
+                    if (!textureFile) {
+                        zip.forEach((relativePath, zipEntry) => {
+                            if (!zipEntry.dir && /\.(png|jpg|jpeg|webp)$/i.test(relativePath) && !textureFile) {
+                                textureFile = zipEntry;
+                            }
+                        });
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 16;
+                    canvas.height = 16;
+                    const ctx = canvas.getContext('2d');
+
+                    let dataUrl = null;
+
+                    if (textureFile) {
+                        const base64 = await textureFile.async("base64");
+                        const ext = textureFile.name.split('.').pop().toLowerCase();
+                        const mime = (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg' : 'image/png';
+                        dataUrl = `data:${mime};base64,${base64}`;
+
+                        await new Promise((resolve) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.drawImage(img, 0, 0, 16, 16);
+                                resolve();
+                            };
+                            img.onerror = () => resolve();
+                            img.src = dataUrl;
+                        });
+                    } else {
+                        ctx.fillStyle = blockData.color || '#3b82f6';
+                        ctx.fillRect(0, 0, 16, 16);
+                        dataUrl = canvas.toDataURL();
+                    }
+
+                    let parsedColor = 0x3b82f6;
+                    if (blockData.color) {
+                        if (typeof blockData.color === 'number') {
+                            parsedColor = blockData.color;
+                        } else if (typeof blockData.color === 'string') {
+                            parsedColor = parseInt(blockData.color.replace("#", "0x"), 16) || 0x3b82f6;
+                        }
+                    }
+
+                    const importedBlockObj = {
+                        id: newId,
+                        name: blockName,
+                        type: blockType,
+                        viscosity: blockData.viscosity || 2,
+                        flowRange: blockData.flowRange || 13,
+                        canvasDataUrl: dataUrl,
+                        canvas: canvas,
+                        color: parsedColor,
+                        source: 'imported',
+                        folderName: zipFileName
+                    };
+
+                    customBlocksDatabase[newId] = importedBlockObj;
+
+                    if (!importedSubfoldersDatabase[zipFileName]) {
+                        importedSubfoldersDatabase[zipFileName] = [];
+                    }
+                    importedSubfoldersDatabase[zipFileName].push(importedBlockObj);
+                    importedCount++;
+                }
+
+                // Set pilihan aktif ke blok pertama yang baru diimport
+                if (importedSubfoldersDatabase[zipFileName] && importedSubfoldersDatabase[zipFileName].length > 0) {
+                    const firstBlock = importedSubfoldersDatabase[zipFileName][0];
+                    hotbarSelection[activeHotbarIndex] = { type: 'block', id: firstBlock.id };
+                    selectedItem = hotbarSelection[activeHotbarIndex];
+                }
+
+                currentInventoryTab = 'imported';
+
+                buildHotbarUI();
+                buildInventoryUI();
+
+                showToast(`Berhasil mengimpor ${importedCount} blok ke folder "${zipFileName}"!`);
+                toggleSettingsModal(false);
+
+            } catch (err) {
+                console.error("Gagal mengimpor file ZIP block:", err);
+                showToast("Terjadi kesalahan saat membaca file .ZIP!");
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        // Switch Tab Folder Inventaris
+        function switchInventoryTab(tabName) {
+            currentInventoryTab = tabName;
+            document.querySelectorAll('.inv-tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (tabName === 'from_game') document.getElementById('tab-from-game').classList.add('active');
+            if (tabName === 'custom_block') document.getElementById('tab-custom-block').classList.add('active');
+            if (tabName === 'imported') document.getElementById('tab-imported').classList.add('active');
+            buildInventoryUI();
+        }
+
+        // Render UI Inventaris berdasarkan Tab & Subfolder
+        function buildInventoryUI() {
+            const grid = document.getElementById('inv-items-list');
+            grid.innerHTML = '';
+
+            if (currentInventoryTab === 'from_game') {
+                minecraftBlocks.forEach(b => renderInvCard(grid, b));
+            } else if (currentInventoryTab === 'custom_block') {
+                const customBlocks = Object.values(customBlocksDatabase).filter(b => b.source === 'custom');
+                if (customBlocks.length === 0) {
+                    grid.innerHTML = '<div style="font-size:9px; color:#64748b; grid-column:span 4; text-align:center; padding:15px;">Belum ada Custom Block. Klik "+ BUAT BLOK BARU" untuk membuat!</div>';
+                } else {
+                    customBlocks.forEach(b => renderInvCard(grid, b));
+                }
+            } else if (currentInventoryTab === 'imported') {
+                const folderNames = Object.keys(importedSubfoldersDatabase);
+                if (folderNames.length === 0) {
+                    grid.innerHTML = '<div style="font-size:9px; color:#64748b; grid-column:span 4; text-align:center; padding:15px;">Belum ada folder impor. Impor file .ZIP di Settings!</div>';
+                } else {
+                    grid.style.display = 'block';
+                    const container = document.createElement('div');
+                    container.className = 'imported-subfolders-list';
+
+                    folderNames.forEach(fName => {
+                        const folderCard = document.createElement('div');
+                        folderCard.className = 'subfolder-card';
+
+                        const blocksInFolder = importedSubfoldersDatabase[fName] || [];
+
+                        folderCard.innerHTML = `
+                            <div class="subfolder-header" onclick="toggleSubfolderVisibility('${fName}')">
+                                <span>📁 ${fName} (${blocksInFolder.length} blok)</span>
+                                <span id="arrow-${fName}">▼</span>
+                            </div>
+                            <div class="inv-grid" id="grid-${fName}" style="padding:6px; margin:0; display:grid;"></div>
+                        `;
+
+                        container.appendChild(folderCard);
+                    });
+
+                    grid.appendChild(container);
+
+                    folderNames.forEach(fName => {
+                        const subGrid = document.getElementById(`grid-${fName}`);
+                        if (subGrid) {
+                            importedSubfoldersDatabase[fName].forEach(b => renderInvCard(subGrid, b));
+                        }
+                    });
+                    return;
+                }
+            }
+
+            grid.style.display = 'grid';
+        }
+
+        function toggleSubfolderVisibility(fName) {
+            const subGrid = document.getElementById(`grid-${fName}`);
+            const arrow = document.getElementById(`arrow-${fName}`);
+            if (subGrid) {
+                if (subGrid.style.display === 'none') {
+                    subGrid.style.display = 'grid';
+                    if (arrow) arrow.innerText = '▼';
+                } else {
+                    subGrid.style.display = 'none';
+                    if (arrow) arrow.innerText = '▶';
+                }
+            }
+        }
+
+        function renderInvCard(parentGrid, b) {
+            const card = document.createElement('div');
+            card.className = 'inv-item-card';
+
+            const bgStyle = b.canvasDataUrl ? 
+                `background-image: url(${b.canvasDataUrl}); background-size: cover; image-rendering: pixelated;` : 
+                `background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}`;
+
+            card.innerHTML = `<div class="inv-item-preview" style="${bgStyle}"></div><div class="inv-item-name">${b.name}</div>`;
+            card.onclick = () => {
+                hotbarSelection[activeHotbarIndex] = { type: 'block', id: b.id };
+                selectedItem = hotbarSelection[activeHotbarIndex];
+                buildHotbarUI();
+                toggleInventory();
+            };
+            parentGrid.appendChild(card);
         }
 
         // --- SISTEM PEMROGRAMAN BALOK VISUAL SCRATCH (GOOGLE BLOCKLY INTEGRATION) ---
@@ -2653,34 +3013,23 @@ Kembalikan respon JSON persis dengan format ini:
                 const b = getBlockData(slot.id);
                 const div = document.createElement('div');
                 div.className = `hotbar-slot ${idx === activeHotbarIndex ? 'active' : ''}`;
-                div.innerHTML = `<div class="slot-color-box" style="background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}"></div><div class="slot-name">${b.name.substring(0,7)}</div>`;
+                
+                const bgStyle = b.canvasDataUrl ? 
+                    `background-image: url(${b.canvasDataUrl}); background-size: cover; image-rendering: pixelated;` : 
+                    `background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}`;
+
+                div.innerHTML = `<div class="slot-color-box" style="${bgStyle}"></div><div class="slot-name">${b.name.substring(0,7)}</div>`;
                 div.addEventListener('click', (e) => { e.stopPropagation(); activeHotbarIndex = idx; selectedItem = slot; buildHotbarUI(); });
                 div.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
                 container.appendChild(div);
             });
         }
 
-        function buildInventoryUI() {
-            const grid = document.getElementById('inv-items-list');
-            grid.innerHTML = '';
-            [...minecraftBlocks, ...Object.values(customBlocksDatabase)].forEach(b => {
-                const card = document.createElement('div');
-                card.className = 'inv-item-card';
-                card.innerHTML = `<div class="inv-item-preview" style="background:#${(b.color || 0x2ecc71).toString(16).padStart(6,'0')}"></div><div class="inv-item-name">${b.name}</div>`;
-                card.onclick = () => {
-                    hotbarSelection[activeHotbarIndex] = { type: 'block', id: b.id };
-                    selectedItem = hotbarSelection[activeHotbarIndex];
-                    buildHotbarUI();
-                    toggleInventory();
-                };
-                grid.appendChild(card);
-            });
-        }
-
+        // --- LOOP UTAMA ANIMASI GAME ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Siklus Waktu 24 Menit
+            // Siklus Waktu 24 Menit Realtime
             const delta = clock.getDelta();
             gameTime += (delta / GAME_DAY_SECONDS) * (Math.PI * 2);
 
@@ -2707,6 +3056,7 @@ Kembalikan respon JSON persis dengan format ini:
             scene.fog.color.lerp(skyColor, 0.05);
             document.getElementById('time-display').innerText = `Waktu: ${timeStr}`;
 
+            // Pergerakan Mob Sederhana
             mobsList.forEach(mob => {
                 mob.angle += 0.01;
                 mob.mesh.position.x += Math.cos(mob.angle) * mob.speed;
@@ -2714,10 +3064,12 @@ Kembalikan respon JSON persis dengan format ini:
                 mob.mesh.rotation.y = -mob.angle;
             });
 
+            // Pengurangan Baterai Robot secara bertahap
             if (robotData.battery > 0) {
                 robotData.battery = Math.max(0, robotData.battery - 0.002);
             }
 
+            // Kontrol Pergerakan Pemain
             if (!isInventoryOpen && !isChatOpen && !isRobotCodeOpen && !isSettingsOpen && !isSleeping) {
                 const dirX = Math.cos(player.rotation.x) * Math.sin(player.rotation.y);
                 const dirY = Math.sin(player.rotation.x);
@@ -2768,6 +3120,7 @@ Kembalikan respon JSON persis dengan format ini:
                 camera.position.copy(player.position);
             }
 
+            // Raycasting Bidikan Crosshair
             raycaster.setFromCamera(mouseCenter, camera);
             const intersects = raycaster.intersectObjects(blocksGroup, false);
             if (intersects.length > 0) {
